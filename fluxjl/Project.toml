@@ -1,6 +1,4 @@
 [deps]
-ChainRules = "082447d4-558c-5d27-93f4-14fc19e9eca2"
-ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-MLDatasets = "eb30cadb-4394-5ae3-aed4-317e484a6458"
-ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+MPIClusterManagers = "e7922434-ae4b-11e9-05c5-9780451d2c66"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
