@@ -1,9 +1,10 @@
 include("aggregate.jl")
 using Flux
 
-train_client(model) = train_client(model, data_loader, learning_rate)
+function train_client(model, client_id)
+  println("Client $(client_id) (Process(m, w): $(myid(role=:master)), $(myid(role=:worker))) is training")
+  data_loader = fed_mnist_loader(id=client_id, np=n_clients, batch_size=batch_size, random_seed=random_seed)
 
-function train_client(model, data_loader, learning_rate)
   optimizer = Flux.setup(Flux.Adam(learning_rate), model)
   num_batches = length(data_loader)
   loss = 0.
@@ -18,6 +19,6 @@ function train_client(model, data_loader, learning_rate)
     Flux.update!(optimizer, model, local_grad)
   end
   
-  println("Loss: ", loss)
+  #println("Loss: ", loss)
   model
 end
