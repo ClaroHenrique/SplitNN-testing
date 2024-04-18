@@ -6,7 +6,7 @@ function aggregate(models::AbstractVector{T}) where T <: Chain
 
   # iterate over layers of the model
   for (i, layer) in enumerate(models[1])
-    if layer isa Dense
+    if layer isa Dense || layer isa Conv
       params = Flux.params(layer)
       new_layer_w = zeros(Float32, size(params[1]))
       new_layer_b = zeros(Float32, size(params[2]))
@@ -22,12 +22,24 @@ function aggregate(models::AbstractVector{T}) where T <: Chain
       new_layer_w ./= n_models
       new_layer_b ./= n_models
       
-      push!(new_model_layers, Dense(new_layer_w, new_layer_b, layer.σ))
-    else
+      if layer isa Dense
+        push!(new_model_layers, Dense(new_layer_w, new_layer_b, layer.σ))
+      else # layer isa Conv
+        new_layer = Conv(new_layer_w, new_layer_b, layer.σ;
+          stride=layer.stride,
+          pad=layer.pad,
+          dilation=layer.dilation,
+          groups=layer.groups
+        )
 
+        push!(new_model_layers, new_layer)
+      end
+    else
       push!(new_model_layers, layer)
     end
   end
 
   Chain(new_model_layers...)
 end
+
+

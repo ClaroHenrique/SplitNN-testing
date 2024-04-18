@@ -3,7 +3,8 @@
 
 using ProgressMeter
 using Distributed
-include("utils.jl")
+using Profile
+include("src/utils.jl")
 #include("/home/henrique/Documents/teste/Distributed.jl")
 
 # instantiate and precompile environment in all processes
@@ -13,11 +14,11 @@ include("utils.jl")
 end
 
 @everywhere begin
-  # load dependencies
+  # Load dependencies
   using Flux, MLDatasets
   using Flux: train!, onehotbatch
-  include("fed_mnist_loader.jl")
-  include("aggregate.jl")
+  include("src/dataset_loader.jl")
+  include("src/aggregate.jl")
 
   # Define variables
   n_servers = 2
@@ -27,7 +28,11 @@ end
   main_id = 1:1
   server_ids = 2:1+n_servers
   client_ids = 1+n_servers+1:1+n_servers+1+n_clients
-  
+
+  main_worker_pool = WorkerPool(main_id)
+  server_worker_pool = WorkerPool(server_ids)
+  client_worker_pool = WorkerPool(client_ids)
+
   if myid() == 1
     println("WORKERS POOLS IDS")
     println("main_id: $(main_id)")
@@ -35,41 +40,26 @@ end
     println("client_ids: $(client_ids)")
   end
 
-  main_worker_pool = WorkerPool(main_id)
-  server_worker_pool = WorkerPool(server_ids)
-  client_worker_pool = WorkerPool(client_ids)
-
   num_epochs = 3
-  learning_rate = 0.01
+  learning_rate = 0.001
   batch_size = 64
+  batchs_per_epoch = 100
   random_seed = 42
 
   #define train functions
-  include("train_parameter_server.jl")
-  include("train_client.jl")
-
-  # define test accuracy function
-  x_test, y_test = MLDatasets.MNIST.testdata()
-  x_test = Flux.flatten(x_test)
-  test_accuracy(model) = test_accuracy(model, x_test, y_test)
+  include("src/train_parameter_server.jl")
+  include("src/train_client.jl")
 end
 
+println("Defining model")
+include("src/model_custom.jl")
+global_model = custom_model
 
-global_model = Chain(
-    Dense(784, 64, relu),
-    Dense(64, 128, relu),
-    Dense(128, 32, relu),
-    Dense(32, 64, relu),
-    Dense(64, 10),
-    softmax
-)
+println("Testing model")
+println("Epoch: $(0), Accuracy: $(test_accuracy(global_model))")
 
-# using Metalhead
-# global_model = resnet(18; imsize=(28, 28))
-    
-println("Epoch: ", 0, ", Accuracy: ", test_accuracy(global_model))
 
-@showprogress for ep in 1:num_epochs
+@profile @showprogress for ep in 1:num_epochs
   global global_model
 
   server_models = pmap(server_worker_pool, 1:n_servers, role=:default) do i
@@ -79,3 +69,4 @@ println("Epoch: ", 0, ", Accuracy: ", test_accuracy(global_model))
   global_model = aggregate(server_models)
   println("Epoch: ", ep, ", Test accuracy: ", test_accuracy(global_model))
 end
+
