@@ -27,7 +27,6 @@ function train_parameter_server(global_model, server_id)
   end
 
   f_references = map(data_ids) do (client_id, data_id)
-    data_id = (server_id)
     remotecall(train_client, client_id, global_model, data_id)
   end
 
