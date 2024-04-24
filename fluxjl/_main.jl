@@ -3,6 +3,7 @@ using Distributed
 using Profile
 using Flux, MLDatasets
 using Flux: train!, onehotbatch
+using Dates
 
 include("src/utils.jl")
 include("src/aggregate.jl")
@@ -48,15 +49,17 @@ num_epochs = 20
 include("src/models/custom.jl")
 global_model = custom_model
 
-function log_model_accuracy(model, x, y; epoch)
-  println("Epoch: $(epoch), Model accuracy: $(test_accuracy(model, x, y))")
+function log_model_accuracy(model, x, y; epoch, duration)
+  println()
+  println("Epoch: $(epoch), Model accuracy: $(test_accuracy(model, x, y)), Timestamp: $(duration)")
 end
 
 # Load test dataset
 x_test, y_test = MLDatasets.CIFAR10.testdata()
 
 # Log model initial test accuracy
-log_model_accuracy(global_model, x_test, y_test; epoch=0)
+initial_timestamp = now()
+log_model_accuracy(global_model, x_test, y_test; epoch=0, duration=now() - initial_timestamp)
 
 train_parameter_server(a,b) = nothing
 
@@ -75,5 +78,5 @@ train_parameter_server(a,b) = nothing
 
   # Aggregate parameter servers' results
   global_model = aggregate(server_models)
-  log_model_accuracy(global_model, x_test, y_test; epoch=ep)
+  log_model_accuracy(global_model, x_test, y_test; epoch=ep, duration=now() - initial_timestamp)
 end
