@@ -6,6 +6,17 @@ import JLD2
 function initializate_fed_dataset(;n_clients, batch_size, random_seed=42)
   println("Creating federated dataset file")
 
+  # Check if already exists
+  try
+    JLD2.load("dataset/train_data_$(n_clients)_b$(batch_size).jld2", "ok")
+  catch err
+      if isa(err, ArgumentError)
+          return
+      else
+          throw(e)
+      end
+  end
+
   # Import CIFAR10 train dataset
   x_train, y_train = MLDatasets.CIFAR10.traindata()
   

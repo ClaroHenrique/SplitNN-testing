@@ -1,9 +1,8 @@
-include("aggregate.jl")
 using Flux
 
-function train_client(model, client_id)
+function train_client(model, data_id)
   # Load federated dataset
-  data_loader = dataset_loader(id=client_id, n_clients=n_clients, batch_size=batch_size)
+  data_loader = dataset_loader(id=data_id, n_clients=n_clients, batch_size=batch_size)
 
   # Initializate optimizer
   optimizer = Flux.setup(Flux.Adam(learning_rate), model)
