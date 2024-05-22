@@ -17,8 +17,8 @@ println("Initializating clients")
 addprocs(4)
 
 @everywhere workers() begin
-  using Pkg; Pkg.activate(@__DIR__)
-  Pkg.instantiate(); Pkg.precompile()
+  #using Pkg; Pkg.activate(@__DIR__)
+  #Pkg.instantiate(); Pkg.precompile()
 
   using Distributed
   using Flux
