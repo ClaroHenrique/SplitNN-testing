@@ -39,6 +39,10 @@ end
 # Define model
 global_model = custom_model
 
+# include("src/models/vgg16.jl")
+# global_model = vgg16
+
+
 # Log model initial test accuracy
 initial_timestamp = now()
 log_test_accuracy(global_model; epoch=0, timestamp=now() - initial_timestamp)
