@@ -4,7 +4,7 @@ using Profile
 using Flux, MLDatasets
 using Flux: train!, onehotbatch
 using Dates
-
+  
 include("src/utils.jl")
 include("src/aggregate.jl")
 include("src/models/custom.jl")
