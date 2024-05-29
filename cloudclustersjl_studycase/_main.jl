@@ -4,7 +4,7 @@ using Profile
 using Flux, MLDatasets
 using Flux: train!, onehotbatch
 using Dates
-using CUDA
+#using CUDA
  
 include("src/utils.jl")
 include("src/aggregate.jl")
@@ -15,7 +15,7 @@ include("src/train_client.jl")
 
 # all nodes but master (id=0) are clients
 println("Initializating clients")
-addprocs(4)
+addprocs(1)
 
 @everywhere workers() begin
   #using Pkg; Pkg.activate(@__DIR__)
@@ -23,9 +23,9 @@ addprocs(4)
 
   using Distributed
   using Flux
-  using CUDA
+  # using CUDA   ***
 
-  CUDA.device!(myid() % 2)
+  # CUDA.device!(myid() % 2)   ***
 
   # Load dependencies
   include("src/train_client.jl")

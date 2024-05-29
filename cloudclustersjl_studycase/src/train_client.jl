@@ -1,15 +1,16 @@
 using Flux
-using CUDA
+#using CUDA   ***
 
 function train_client(model)
 
-  model = fmap(cu,model)
+  # model = fmap(cu,model)
 
   # Initializate optimizer
-  optimizer = Flux.setup(Flux.Adam(learning_rate), model) |> gpu
+  optimizer = Flux.setup(Flux.Adam(learning_rate), model) # |> gpu   ***
 
   # Run SGD
-  #=CUDA.@allowscalar=# for (i, (x, y)) in enumerate(data_loader)
+  
+  #=for (i, (x, y)) in enumerate(data_loader)
     # Calculate grads
     loss, (local_grad, ) = Flux.withgradient(model, x) do model, x
       y_hat = model(x)
@@ -24,8 +25,14 @@ function train_client(model)
       break
     end
   end |> gpu
+  =#
+
+  Flux.train!(model, enumerate(data_loader), optimizer) do m, x, y 
+    loss(m(x), y)
+  end
+
 
   # Return the updated local model, i.i.e the initial
   # copy of the global model trained with local data
-  model |> cpu
+  model # |> cpu   ***
 end
