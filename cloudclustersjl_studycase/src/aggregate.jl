@@ -11,26 +11,21 @@ function aggregate(models::AbstractVector{T}) where T <: Chain
       new_layer_w = CUDA.zeros(size(params[1])) #zeros(Float32, size(params[1])) 
       new_layer_b = CUDA.zeros(size(params[2])) #zeros(Float32, size(params[2]))
 
-      flux_params = CuArray{CuArray{Float32}}(undef, n_models)
-      k=0
+      # sum current layer's params from all the models 
       for m in models
-        flux_params[i] = cu(Flux.params(m[i]))
-        k += 1
+        params = cu(Flux.params(m[i]))
+        begin
+          new_layer_w += params[1] 
+          new_layer_b += params[2] 
+        end |> gpu
       end
 
+      # get mean from the division
       begin
-        # sum current layer's params from all the models 
-        for k in 1..n_models
-          #params = cu(Flux.params(m[i]))
-          new_layer_w += flux_params[k][1] 
-          new_layer_b += flux_params[k][2] 
-        end 
-
-        # get mean from the division
         new_layer_w ./= n_models
-        new_layer_b ./= n_models      
+        new_layer_b ./= n_models
       end |> gpu
-
+      
       new_layer_w = new_layer_w |> cpu
       new_layer_b = new_layer_b |> cpu
 
