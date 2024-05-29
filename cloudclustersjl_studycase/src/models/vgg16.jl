@@ -21,7 +21,7 @@ vgg16 = Chain(
   Conv((3, 3), 512 => 512, relu, pad=1),  # 2_359_808 parameters
   MaxPool((2, 2)),
   MLUtils.flatten,
-  Dense(#=25088=# 512*32 => 4096, relu),       # 102_764_544 parameters
+  Dense(25088 => 4096, relu),       # 102_764_544 parameters
   Dropout(0.5),
   Dense(4096 => 4096, relu),        # 16_781_312 parameters
   Dropout(0.5),

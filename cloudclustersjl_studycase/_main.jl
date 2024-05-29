@@ -68,9 +68,9 @@ num_epochs = 100
     fetch(client_model_future_ref)
   end
 
-  local_models = fmap(cu,local_models)
+  #local_models = fmap(cu,local_models)
 
   # Aggregate clients' results
-  global_model = aggregate(local_models) |> gpu
+  global_model = aggregate(local_models) 
   log_test_accuracy(global_model; epoch=ep, timestamp=now()-initial_timestamp) 
 end
