@@ -14,17 +14,13 @@ function aggregate(models::AbstractVector{T}) where T <: Chain
       # sum current layer's params from all the models 
       for m in models
         params = cu(Flux.params(m[i]))
-        begin
-          new_layer_w += params[1] 
-          new_layer_b += params[2] 
-        end |> gpu
+        new_layer_w += params[1] 
+        new_layer_b += params[2] 
       end
 
       # get mean from the division
-      begin
-        new_layer_w ./= n_models
-        new_layer_b ./= n_models
-      end |> gpu
+      new_layer_w ./= n_models
+      new_layer_b ./= n_models
       
       new_layer_w = new_layer_w |> cpu
       new_layer_b = new_layer_b |> cpu
