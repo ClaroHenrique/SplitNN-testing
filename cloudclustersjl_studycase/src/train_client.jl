@@ -28,7 +28,8 @@ function train_client(model)
   =#
 
   Flux.train!(model, enumerate(data_loader), optimizer) do m, x, y 
-    loss(m(x), y)
+    y_hat = m(x)
+    Flux.logitcrossentropy(y_hat, y)
   end
 
 
