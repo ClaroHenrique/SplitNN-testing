@@ -4,7 +4,8 @@ using Profile
 using Flux, MLDatasets
 using Flux: train!, onehotbatch
 using Dates
-  
+using CUDA
+ 
 include("src/utils.jl")
 include("src/aggregate.jl")
 include("src/models/custom.jl")
@@ -22,6 +23,9 @@ addprocs(4)
 
   using Distributed
   using Flux
+  using CUDA
+
+  CUDA.device!(myid() % 2)
 
   # Load dependencies
   include("src/train_client.jl")
@@ -33,14 +37,14 @@ addprocs(4)
   iterations_per_client = 100
 
   # Create local data loader
-  data_loader = dataset_loader(batch_size)
+  data_loader = dataset_loader(batch_size) 
 end
 
 # Define model
 global_model = custom_model
 
-# include("src/models/vgg16.jl")
-# global_model = vgg16
+#include("src/models/vgg16.jl")
+#global_model = vgg16
 
 
 # Log model initial test accuracy
@@ -49,7 +53,7 @@ log_test_accuracy(global_model; epoch=0, timestamp=now() - initial_timestamp)
 
 # Begin distributed training
 println("Start training")
-num_epochs = 10
+num_epochs = 100
 
 @profile @showprogress for ep in 1:num_epochs
   global global_model
@@ -64,7 +68,9 @@ num_epochs = 10
     fetch(client_model_future_ref)
   end
 
+  local_models = fmap(cu,local_models)
+
   # Aggregate clients' results
-  global_model = aggregate(local_models)
-  log_test_accuracy(global_model; epoch=ep, timestamp=now()-initial_timestamp)
+  global_model = aggregate(local_models) |> gpu
+  log_test_accuracy(global_model; epoch=ep, timestamp=now()-initial_timestamp) 
 end

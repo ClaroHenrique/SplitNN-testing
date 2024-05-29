@@ -3,6 +3,7 @@ using Profile
 using Flux, MLDatasets
 using Flux: train!, onehotbatch
 using Dates
+using CUDA
 
 include("src/utils.jl")
 include("src/aggregate.jl")
@@ -21,7 +22,8 @@ iterations_per_client = 100
 data_loader = dataset_loader(batch_size)
 
 # Define model
-model = custom_model
+model = fmap(cu,custom_model)
+#model = custom_model
 
 # include("src/models/vgg16.jl")
 # model = vgg16

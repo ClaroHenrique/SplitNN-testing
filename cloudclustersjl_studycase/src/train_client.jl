@@ -1,27 +1,31 @@
 using Flux
+using CUDA
 
 function train_client(model)
+
+  model = fmap(cu,model)
+
   # Initializate optimizer
-  optimizer = Flux.setup(Flux.Adam(learning_rate), model)
+  optimizer = Flux.setup(Flux.Adam(learning_rate), model) |> gpu
 
   # Run SGD
-  for (i, (x, y)) in enumerate(data_loader)
+  #=CUDA.@allowscalar=# for (i, (x, y)) in enumerate(data_loader)
     # Calculate grads
     loss, (local_grad, ) = Flux.withgradient(model, x) do model, x
       y_hat = model(x)
       Flux.logitcrossentropy(y_hat, y)
-    end
+    end # |> gpu
 
     # Use grads to update the local model
-    Flux.update!(optimizer, model, local_grad)
+    Flux.update!(optimizer, model, local_grad) # |> gpu
 
     # Stops when reached limit of iterations per client
     if(i == iterations_per_client)
       break
     end
-  end
+  end |> gpu
 
   # Return the updated local model, i.i.e the initial
   # copy of the global model trained with local data
-  model
+  model |> cpu
 end

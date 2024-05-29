@@ -14,7 +14,10 @@ function test_accuracy(model, x_test, y_test; batchsize=32)
 end
 
 # Load test dataset
-x_test, y_test = MLDatasets.CIFAR10.testdata()
+x_test, y_test = CIFAR10(split=:test)[:]  # MLDatasets.CIFAR10.testdata()
+
+#x_test = cu(x_test)
+#y_test = cu(y_test)
 
 function log_model_accuracy(model, x, y; epoch, timestamp)
   println()
