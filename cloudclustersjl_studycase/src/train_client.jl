@@ -9,8 +9,10 @@ function train_client(model)
   optimizer = Flux.setup(Flux.Adam(learning_rate), model) # |> gpu   ***
 
   # Run SGD
-  
-  #=for (i, (x, y)) in enumerate(data_loader)
+
+#=
+  i=0  
+  for (x, y) in data_loader
     # Calculate grads
     loss, (local_grad, ) = Flux.withgradient(model, x) do model, x
       y_hat = model(x)
@@ -24,10 +26,11 @@ function train_client(model)
     if(i == iterations_per_client)
       break
     end
-  end |> gpu
+    i+=1
+  end # |> gpu   ***
   =#
-
-  Flux.train!(model, enumerate(data_loader), optimizer) do m, x, y 
+  
+  Flux.train!(model, data_loader, optimizer) do m, x, y 
     y_hat = m(x)
     Flux.logitcrossentropy(y_hat, y)
   end
