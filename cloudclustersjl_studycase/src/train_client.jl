@@ -1,7 +1,7 @@
 using Flux
 #using CUDA   ***
 
-function train_client(model)
+function train_client(model, data_loader)
 
   model = model |> gpu
 
@@ -31,6 +31,8 @@ function train_client(model)
   
   @info "$i iterations"
 #=  
+=======
+>>>>>>> 1d30a67e914e064bea32f3aedeb2fdbd2f894295
   Flux.train!(model, data_loader, optimizer) do m, x, y
     y_hat = m(x)
     Flux.logitcrossentropy(y_hat, y)

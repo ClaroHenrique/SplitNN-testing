@@ -1,29 +1,17 @@
-function test_accuracy(model, x_test, y_test; batchsize=32)
-    accuracy = 0
-    n = length(y_test)
-
-    for (x,y) in Flux.DataLoader((data=x_test, label=y_test), batchsize=batchsize)
-        y_true = y
-        output = model(x)
-        y_pred = reshape(map(x -> x[1][1] -1, findmax(output, dims=1)[2]), length(y_true))
-
-        accuracy += sum(y_pred .== y_true)
+function test_accuracy(model, data_loader)
+    correct = 0
+    total = 0
+    for (x, y) in data_loader
+        n = size(x)[end]
+        y_pred = reshape(map(x -> x[1][1] -1, findmax(model(x), dims=1)[2]), n)
+        y_true = reshape(map(x -> x[1][1] -1, findmax(y       , dims=1)[2]), n)
+        correct += sum(y_pred .== y_true)
+        total += n
     end
-
-    accuracy / n
+    correct / total
 end
 
-# Load test dataset
-x_test, y_test = CIFAR10(split=:test)[:]  # MLDatasets.CIFAR10.testdata()
-
-#x_test = cu(x_test)
-#y_test = cu(y_test)
-
-function log_model_accuracy(model, x, y; epoch, timestamp)
+function log_model_accuracy(model, data_loader; epoch, timestamp)
   println()
-  println("Epoch: $(epoch), Model accuracy: $(test_accuracy(model, x, y)), Timestamp: $(timestamp)")
+  println("Epoch: $(epoch), Model accuracy: $(test_accuracy(model, data_loader)), Timestamp: $(timestamp)")
 end
-
-log_test_accuracy(model; epoch, timestamp) = log_model_accuracy(model, x_test, y_test; epoch=epoch, timestamp=timestamp)
-
-
