@@ -23,16 +23,16 @@ function train_client(model, data_loader)
     Flux.update!(optimizer, model, local_grad) # |> gpu
 
     # Stops when reached limit of iterations per client
-  #  if(i == iterations_per_client)
-  #    break
-  #  end
+    if(i == iterations_per_client)
+      break
+    end
     i+=1
   end # |> gpu   ***
   
   @info "$i iterations"
+
+
 #=  
-=======
->>>>>>> 1d30a67e914e064bea32f3aedeb2fdbd2f894295
   Flux.train!(model, data_loader, optimizer) do m, x, y
     y_hat = m(x)
     Flux.logitcrossentropy(y_hat, y)

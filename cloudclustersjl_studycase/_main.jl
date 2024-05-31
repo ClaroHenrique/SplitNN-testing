@@ -95,6 +95,6 @@ num_epochs = 100
   #  global_model = aggregate(local_models) 
 #  log_test_accuracy(global_model; epoch=ep, timestamp=now() - initial_timestamp) 
 
-model = aggregate(local_models) 
+  model = aggregate(local_models) 
   log_model_accuracy(model, test_loader; epoch=ep, timestamp=now() - initial_timestamp)
 end
