@@ -12,12 +12,12 @@ include("src/train_client.jl")
 include("src/dataset_loader.jl")
 
 ### Inicitalizate client nodes ###
-println("Initializating clients")
+println("Initializating")
 
 # Define constants
 learning_rate = 0.001
 batch_size = 32
-iterations_per_client = 2
+iterations_per_client = 100
 
 # Define model
 model_name = "custom"
@@ -43,7 +43,7 @@ train_loader = dataset_loader(train_data,
   img_dims=img_dims,
   n_batches=iterations_per_client,
 )
-test_loader = dataset_loader(train_data,
+test_loader = dataset_loader(test_data,
   batch_size=batch_size,
   img_dims=img_dims,
   n_batches=iterations_per_client,
@@ -55,7 +55,7 @@ log_model_accuracy(model, test_loader; epoch=0, timestamp=now() - initial_timest
 
 # Begin distributed training
 println("Start training")
-num_epochs = 20
+num_epochs = 100
 
 @profile @showprogress for ep in 1:num_epochs
   global model

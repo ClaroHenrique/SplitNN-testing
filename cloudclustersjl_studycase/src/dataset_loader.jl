@@ -1,11 +1,11 @@
 using Flux, MLDatasets, Images
 
-function dataset_loader(data; batch_size, img_dims, n_batches)
+function dataset_loader(data; batch_size=32, img_dims=nothing, n_batches=2^50)
   # Load training data (images, labels)
   x_train, y_train = data
 
   # Resize images
-  fx(x) = resize_images(x, (img_dims)) #|> cu
+  fx(x) = isnothing(img_dims) ? x : resize_images(x, (img_dims)) #|> cu
 
   # Convert labels to one-hot encode
   fy(y) = Flux.onehotbatch(y, 0:9) #|> cu
