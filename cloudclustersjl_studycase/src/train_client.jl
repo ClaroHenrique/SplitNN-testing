@@ -3,7 +3,7 @@ using Flux
 
 function train_client(model)
 
-  # model = fmap(cu,model)
+  model = model |> gpu
 
   # Initializate optimizer
   optimizer = Flux.setup(Flux.Adam(learning_rate), model) # |> gpu   ***
@@ -38,5 +38,5 @@ function train_client(model)
 
   # Return the updated local model, i.i.e the initial
   # copy of the global model trained with local data
-  model # |> cpu   ***
+  model |> cpu   
 end

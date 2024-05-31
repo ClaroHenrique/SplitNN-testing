@@ -23,7 +23,7 @@ addprocs(1)
 
   using Distributed
   using Flux
-  # using CUDA   ***
+  using CUDA  
 
   # CUDA.device!(myid() % 2)   ***
 
