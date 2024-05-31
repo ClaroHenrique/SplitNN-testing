@@ -12,5 +12,5 @@ function dataset_loader(batch_size)
   #y_train = cu(y_train)   ***
  
   # Create data loader
-  Flux.DataLoader((data=x_train, label=y_train), batchsize=batch_size, partial=false, shuffle=true);
+  Flux.DataLoader((x_train, y_train) |> gpu, batchsize=batch_size, partial=false, shuffle=true)
 end

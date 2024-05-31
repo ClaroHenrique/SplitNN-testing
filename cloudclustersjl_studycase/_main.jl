@@ -4,7 +4,7 @@ using Profile
 using Flux, MLDatasets
 using Flux: train!, onehotbatch
 using Dates
-#using CUDA
+using CUDA
  
 include("src/utils.jl")
 include("src/aggregate.jl")
@@ -18,12 +18,11 @@ println("Initializating clients")
 addprocs(1)
 
 @everywhere workers() begin
-  #using Pkg; Pkg.activate(@__DIR__)
-  #Pkg.instantiate(); Pkg.precompile()
 
   using Distributed
   using Flux
-  # using CUDA   ***
+  using ProgressLogging
+  using CUDA   
 
   # CUDA.device!(myid() % 2)   ***
 
@@ -72,5 +71,5 @@ num_epochs = 100
 
   # Aggregate clients' results
   global_model = aggregate(local_models) 
-  log_test_accuracy(global_model; epoch=ep, timestamp=now()-initial_timestamp) 
+  log_test_accuracy(global_model; epoch=ep, timestamp=now() - initial_timestamp) 
 end
