@@ -31,7 +31,7 @@ elseif model_name == "vgg16"
   model = vgg16
   img_dims = (224, 224)
 end
-model = fmap(cu, model)
+model = model |> gpu
 
 # Download dataset
 train_data = CIFAR10(split=:train)[:]

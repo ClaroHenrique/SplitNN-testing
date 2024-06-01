@@ -10,9 +10,9 @@ custom_model = Chain(
   MaxPool((2, 2), pad=1),
   MLUtils.flatten,
   Dense(5184 => 512, relu),             # 2_654_720 parameters
-  #Dropout(0.5),
+  Dropout(0.5),
   Dense(512 => 256, relu),              # 131_328 parameters
-  #Dropout(0.5),
+  Dropout(0.5),
   Dense(256 => 10),                     # 2_570 parameters
 )                   
 # Total: 14 arrays, 2_854_186 parameters, 10.890 MiB.
