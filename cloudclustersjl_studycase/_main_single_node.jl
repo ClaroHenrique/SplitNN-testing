@@ -1,9 +1,9 @@
 using ProgressMeter
 using Profile
+using CUDA, cuDNN
 using Flux, MLDatasets
 using Flux: train!, onehotbatch
 using Dates
-using CUDA
 
 include("src/utils.jl")
 include("src/aggregate.jl")
