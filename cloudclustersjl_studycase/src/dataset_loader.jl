@@ -30,7 +30,7 @@ end
 function resize_images(imgs, new_dims)
   n = size(imgs)[end]
   num_channels = size(imgs)[end-1]
-  new_imgs = CUDA.zeros(Float32, new_dims..., num_channels, n) #new_imgs = zeros(Float32, new_dims..., num_channels, n)
+  new_imgs = zeros(Float32, new_dims..., num_channels, n) #new_imgs = CUDA.zeros(Float32, new_dims..., num_channels, n)
   for i in 1:n
     new_imgs[:,:,:,i] .= imresize(imgs[:,:,:,i], new_dims)
   end
