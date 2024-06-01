@@ -5,13 +5,12 @@ using Flux, MLDatasets
 using Flux: train!, onehotbatch
 using Dates
 using CUDA
- 
+
 include("src/utils.jl")
 include("src/aggregate.jl")
 include("src/models/custom.jl")
 include("src/train_client.jl")
 include("src/dataset_loader.jl")
-
 
 # Define model
 model_name = "custom"
