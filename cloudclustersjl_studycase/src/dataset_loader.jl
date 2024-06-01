@@ -7,7 +7,7 @@ function dataset_loader(data; img_dims, batch_size=32, n_batches=2^50)
   x_train, y_train = data
 
   # Resize images
-  fx(x) = resize_images(cu(x), (img_dims))
+  fx(x) = resize_images(x, img_dims) |> cu #TODO: resize in GPU?
 
   # Convert labels to one-hot encode
   fy(y) = Flux.onehotbatch(y, 0:9) |> cu
