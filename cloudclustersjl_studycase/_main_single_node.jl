@@ -3,7 +3,7 @@ using Profile
 using Flux, MLDatasets
 using Flux: train!, onehotbatch
 using Dates
-#using CUDA
+using CUDA
 
 include("src/utils.jl")
 include("src/aggregate.jl")

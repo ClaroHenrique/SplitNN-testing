@@ -2,12 +2,12 @@ using Flux, MLDatasets, Images
 using CUDA
 
 
-function dataset_loader(data; batch_size=32, img_dims=nothing, n_batches=2^50)
+function dataset_loader(data; img_dims, batch_size=32, n_batches=2^50)
   # Load training data (images, labels)
   x_train, y_train = data
 
   # Resize images
-  fx(x) = isnothing(img_dims) ? x : resize_images(x, (img_dims)) |> cu
+  fx(x) = resize_images(cu(x), (img_dims))
 
   # Convert labels to one-hot encode
   fy(y) = Flux.onehotbatch(y, 0:9) |> cu
@@ -15,7 +15,7 @@ function dataset_loader(data; batch_size=32, img_dims=nothing, n_batches=2^50)
   # Create data loader
   # Flux.DataLoader((x_train, y_train) |> gpu, batchsize=batch_size, partial=false, shuffle=true)
 
-DataLoaderTransform(
+  DataLoaderTransform(
     data=x_train,
     label=y_train,
     n_batches=n_batches,
