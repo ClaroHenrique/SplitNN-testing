@@ -20,8 +20,13 @@ batch_size = 32
 iterations_per_client = 100
 
 # Define model
-model_name = "custom"
-#model_name = "vgg16"
+# model_name = "custom"
+# model_name = "vgg16"
+# model_name = "resnet"
+# model_name = "mobilenetv3_small"
+# model_name = "mobilenetv3_large"
+
+model_name = "mobilenetv3"
 if model_name == "custom"
   include("src/models/custom.jl")
   model = custom_model
@@ -29,6 +34,18 @@ if model_name == "custom"
 elseif model_name == "vgg16"
   include("src/models/vgg16.jl")
   model = vgg16
+  img_dims = (224, 224)
+elseif model_name == "resnet"
+  include("src/models/resnet.jl")
+  model = resnet18
+  img_dims = (224, 224)
+elseif model_name == "mobilenetv3_small"
+  include("src/models/mobilenet.jl")
+  model = mobilenetv3_small
+  img_dims = (224, 224)
+elseif model_name == "mobilenetv3_large"
+  include("src/models/mobilenet.jl")
+  model = mobilenetv3_large
   img_dims = (224, 224)
 end
 model = model |> gpu
