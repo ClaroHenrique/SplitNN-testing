@@ -26,5 +26,5 @@ vgg16 = Chain(
   Dense(4096 => 4096, relu),        # 16_781_312 parameters
   Dropout(0.5),
   Dense(4096 => 10),                # 40_970 parameters
-)
+) # 512.325 MiB
 

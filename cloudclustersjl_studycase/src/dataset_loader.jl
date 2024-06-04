@@ -1,19 +1,21 @@
 using Flux, MLDatasets, Images
+using CUDA
 
-function dataset_loader(data; batch_size=32, img_dims=nothing, n_batches=2^50)
+
+function dataset_loader(data; img_dims, batch_size=32, n_batches=2^50)
   # Load training data (images, labels)
   x_train, y_train = data
 
   # Resize images
-  fx(x) = isnothing(img_dims) ? x : resize_images(x, (img_dims)) #|> cu
+  fx(x) = resize_images(x, img_dims) |> gpu #TODO: resize in GPU?
 
   # Convert labels to one-hot encode
-  fy(y) = Flux.onehotbatch(y, 0:9) #|> cu
+  fy(y) = Flux.onehotbatch(y, 0:9) |> gpu
  
   # Create data loader
-#  Flux.DataLoader((x_train, y_train) |> gpu, batchsize=batch_size, partial=false, shuffle=true)
+  # Flux.DataLoader((x_train, y_train) |> gpu, batchsize=batch_size, partial=false, shuffle=true)
 
-DataLoaderTransform(
+  DataLoaderTransform(
     data=x_train,
     label=y_train,
     n_batches=n_batches,
@@ -25,14 +27,14 @@ DataLoaderTransform(
   );
 end
 
-function resize_images(data, new_dims)
-  n = size(data)[end]
-  num_channels = size(data)[end-1]
-  new_data = zeros(Float32, new_dims..., num_channels, n)
+function resize_images(imgs, new_dims)
+  n = size(imgs)[end]
+  num_channels = size(imgs)[end-1]
+  new_imgs = zeros(Float32, new_dims..., num_channels, n) #new_imgs = CUDA.zeros(Float32, new_dims..., num_channels, n)
   for i in 1:n
-    new_data[:,:,:,i] .= imresize(data[:,:,:,i], new_dims)
+    new_imgs[:,:,:,i] .= imresize(imgs[:,:,:,i], new_dims)
   end
-  new_data
+  new_imgs
 end
 
 # Iterate over data with lazy transform #
