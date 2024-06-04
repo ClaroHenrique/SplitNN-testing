@@ -21,7 +21,6 @@ model_name = "resnet18"
 
 include("src/models/get_model.jl")
 model, img_dims = get_model(model_name)
-model |> gpu
 
 # Download dataset
 train_data = CIFAR10(split=:train)[:]
