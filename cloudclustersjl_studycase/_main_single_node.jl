@@ -1,3 +1,6 @@
+import Pkg
+Pkg.instantiate()
+
 using ProgressMeter
 using Profile
 using CUDA, cuDNN
@@ -28,7 +31,6 @@ model_name = "resnet18"
 
 include("src/models/get_model.jl")
 model, img_dims = get_model(model_name)
-model |> gpu
 
 # Download dataset
 train_data = CIFAR10(split=:train)[:]
@@ -54,17 +56,17 @@ partial_test_loader = dataset_loader(test_data,
 
 # Log model initial test accuracy
 initial_timestamp = now()
-log_model_accuracy(model, test_loader; epoch=0, timestamp=now() - initial_timestamp)
+log_model_accuracy(model |> gpu, test_loader; iteration=0, timestamp=now() - initial_timestamp)
 
 # Begin distributed training
 println("Start training")
-num_epochs = 100
+num_interations = 100
 
-@profile @showprogress for ep in 1:num_epochs
+@profile @showprogress for it in 1:num_interations
   global model
-  train_client(model, train_loader)
-  log_model_accuracy(model, partial_test_loader; epoch=ep, timestamp=now()-initial_timestamp)
+  model = train_client(model, train_loader)
+  log_model_accuracy(model |> gpu, partial_test_loader; iteration=it, timestamp=now()-initial_timestamp)
 end
 
 println("Complete test accuracy")
-log_model_accuracy(model, partial_test_loader; epoch=ep, timestamp=now()-initial_timestamp)
+log_model_accuracy(model, partial_test_loader; iteration=num_interations, timestamp=now()-initial_timestamp)
