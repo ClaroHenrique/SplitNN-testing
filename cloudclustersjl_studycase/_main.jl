@@ -72,7 +72,7 @@ end
 
 println("Log initial test accuracy")
 initial_timestamp = now()
-log_model_accuracy(model |> gpu, partial_test_loader; epoch=0, timestamp=now() - initial_timestamp)
+log_model_accuracy(model |> gpu, partial_test_loader; iteration=0, timestamp=now() - initial_timestamp)
 
 # Begin distributed training
 println("Start training")
@@ -95,9 +95,9 @@ num_iterations = 100
   model = aggregate(local_models) 
 
   # Print partial accuracy
-  log_model_accuracy(model |> gpu, partial_test_loader; epoch=it, timestamp=now() - initial_timestamp)
+  log_model_accuracy(model |> gpu, partial_test_loader; iteration=it, timestamp=now() - initial_timestamp)
 end
 
 println("Full test accuracy:")
-log_model_accuracy(model |> gpu, test_loader; epoch=num_iterations, timestamp=now() - initial_timestamp)
+log_model_accuracy(model |> gpu, test_loader; iteration=num_iterations, timestamp=now() - initial_timestamp)
 
