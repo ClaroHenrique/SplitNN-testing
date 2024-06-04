@@ -11,6 +11,11 @@ include("src/aggregate.jl")
 include("src/models/custom.jl")
 include("src/train_client.jl")
 include("src/dataset_loader.jl")
+include("src/models/get_model.jl")
+
+learning_rate = 0.001
+batch_size = 32
+iterations_per_client = 200
 
 # Define model
 # model_name = "custom"
@@ -19,7 +24,6 @@ model_name = "resnet18"
 # model_name = "mobilenetv3_small"
 # model_name = "mobilenetv3_large"
 
-include("src/models/get_model.jl")
 model, img_dims = get_model(model_name)
 
 # Download dataset
@@ -47,33 +51,28 @@ addprocs(2)
   using Distributed
   using Flux
   using ProgressLogging
-  using CUDA   
+  using CUDA
 
   # CUDA.device!(myid() % 2)   ***
-
+  println("Initializating client $(myid())")
   # Load dependencies
   include("src/train_client.jl")
   include("src/dataset_loader.jl")
 
-  # Define global constants
-  learning_rate = 0.001
-  batch_size = 32
-  iterations_per_client = 200
-
   # Create local data loader
   train_data = CIFAR10(split=:train)[:]
   train_loader = dataset_loader(train_data,
-    batch_size=batch_size,
+    batch_size=$batch_size,
     img_dims=$img_dims,
-    n_batches=iterations_per_client,
+    n_batches=$iterations_per_client,
   )
 
   train_client(model) = train_client(model, train_loader)
 end
 
-# Log model initial test accuracy
+println("Log initial test accuracy")
 initial_timestamp = now()
-log_model_accuracy(model, test_loader; epoch=0, timestamp=now() - initial_timestamp)
+log_model_accuracy(model |> gpu, partial_test_loader; epoch=0, timestamp=now() - initial_timestamp)
 
 # Begin distributed training
 println("Start training")
@@ -96,8 +95,8 @@ num_iterations = 100
   model = aggregate(local_models) 
 
   # Print partial accuracy
-  log_model_accuracy(model, partial_test_loader; epoch=ep, timestamp=now() - initial_timestamp)
+  log_model_accuracy(model |> gpu, partial_test_loader; epoch=ep, timestamp=now() - initial_timestamp)
 end
 
 println("Full test accuracy:")
-log_model_accuracy(model, test_loader; epoch=ep, timestamp=now() - initial_timestamp)
+log_model_accuracy(model |> gpu, test_loader; epoch=ep, timestamp=now() - initial_timestamp)
