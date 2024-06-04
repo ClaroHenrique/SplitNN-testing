@@ -14,7 +14,7 @@ function test_accuracy(model, data_loader)
     correct / total
 end
 
-function log_model_accuracy(model, data_loader; epoch, timestamp)
+function log_model_accuracy(model, data_loader; iteration, timestamp)
   println()
-  println("Epoch: $(epoch), Model accuracy: $(test_accuracy(model, data_loader)), Timestamp: $(timestamp)")
+  println("Iteration: $(iteration), Model accuracy: $(test_accuracy(model, data_loader)), Timestamp: $(timestamp)")
 end

@@ -78,7 +78,7 @@ log_model_accuracy(model |> gpu, partial_test_loader; epoch=0, timestamp=now() -
 println("Start training")
 num_iterations = 100
 
-@profile @showprogress for ep in 1:num_epochs
+@profile @showprogress for it in 1:num_iterations
   global model
 
   # Send global model to clients and start the training
@@ -95,8 +95,9 @@ num_iterations = 100
   model = aggregate(local_models) 
 
   # Print partial accuracy
-  log_model_accuracy(model |> gpu, partial_test_loader; epoch=ep, timestamp=now() - initial_timestamp)
+  log_model_accuracy(model |> gpu, partial_test_loader; epoch=it, timestamp=now() - initial_timestamp)
 end
 
 println("Full test accuracy:")
-log_model_accuracy(model |> gpu, test_loader; epoch=ep, timestamp=now() - initial_timestamp)
+log_model_accuracy(model |> gpu, test_loader; epoch=num_iterations, timestamp=now() - initial_timestamp)
+
