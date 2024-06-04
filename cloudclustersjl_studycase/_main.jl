@@ -1,8 +1,10 @@
+import Pkg
+Pkg.instantiate()
+
 using ProgressMeter
 using Distributed
 using Profile
 using Flux, MLDatasets
-using Flux: train!, onehotbatch
 using Dates
 using CUDA
 
@@ -25,7 +27,6 @@ model_name = "resnet18"
 # model_name = "mobilenetv3_large"
 
 model, img_dims = get_model(model_name)
-
 # Download dataset
 train_data = CIFAR10(split=:train)[:]
 test_data = CIFAR10(split=:test)[:]
@@ -45,13 +46,17 @@ partial_test_loader = dataset_loader(test_data,
 ### Inicitalizate client nodes ###
 # all nodes but master (id=1) are clients
 println("Initializating clients")
-addprocs(2)
+addprocs(1)
 
 @everywhere workers() begin
+  import Pkg
+  Pkg.instantiate()
+
   using Distributed
-  using Flux
-  using ProgressLogging
   using CUDA
+  using Flux
+  using Metalhead
+  using ProgressLogging
 
   # CUDA.device!(myid() % 2)   ***
   println("Initializating client $(myid())")
@@ -59,12 +64,17 @@ addprocs(2)
   include("src/train_client.jl")
   include("src/dataset_loader.jl")
 
+  learning_rate = $learning_rate
+  batch_size = $batch_size
+  img_dims = $img_dims
+  iterations_per_client = $iterations_per_client
+
   # Create local data loader
   train_data = CIFAR10(split=:train)[:]
   train_loader = dataset_loader(train_data,
-    batch_size=$batch_size,
-    img_dims=$img_dims,
-    n_batches=$iterations_per_client,
+    batch_size=batch_size,
+    img_dims=img_dims,
+    n_batches=iterations_per_client,
   )
 
   train_client(model) = train_client(model, train_loader)
