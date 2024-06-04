@@ -22,33 +22,13 @@ iterations_per_client = 100
 # Define model
 # model_name = "custom"
 # model_name = "vgg16"
-# model_name = "resnet"
+model_name = "resnet18"
 # model_name = "mobilenetv3_small"
 # model_name = "mobilenetv3_large"
 
-model_name = "mobilenetv3"
-if model_name == "custom"
-  include("src/models/custom.jl")
-  model = custom_model
-  img_dims = (32,32)
-elseif model_name == "vgg16"
-  include("src/models/vgg16.jl")
-  model = vgg16
-  img_dims = (224, 224)
-elseif model_name == "resnet"
-  include("src/models/resnet.jl")
-  model = resnet18
-  img_dims = (224, 224)
-elseif model_name == "mobilenetv3_small"
-  include("src/models/mobilenet.jl")
-  model = mobilenetv3_small
-  img_dims = (224, 224)
-elseif model_name == "mobilenetv3_large"
-  include("src/models/mobilenet.jl")
-  model = mobilenetv3_large
-  img_dims = (224, 224)
-end
-model = model |> gpu
+include("src/models/get_model.jl")
+model, img_dims = get_model(model_name)
+model |> gpu
 
 # Download dataset
 train_data = CIFAR10(split=:train)[:]
@@ -63,8 +43,14 @@ train_loader = dataset_loader(train_data,
 test_loader = dataset_loader(test_data,
   batch_size=batch_size,
   img_dims=img_dims,
-  n_batches=iterations_per_client,
+  n_batches=10000,
 )
+partial_test_loader = dataset_loader(test_data,
+  batch_size=batch_size,
+  img_dims=img_dims,
+  n_batches=iterations_per_client,
+) # Run test using less instances
+
 
 # Log model initial test accuracy
 initial_timestamp = now()
@@ -77,5 +63,8 @@ num_epochs = 100
 @profile @showprogress for ep in 1:num_epochs
   global model
   train_client(model, train_loader)
-  log_model_accuracy(model, test_loader; epoch=ep, timestamp=now()-initial_timestamp)
+  log_model_accuracy(model, partial_test_loader; epoch=ep, timestamp=now()-initial_timestamp)
 end
+
+println("Complete test accuracy")
+log_model_accuracy(model, partial_test_loader; epoch=ep, timestamp=now()-initial_timestamp)
