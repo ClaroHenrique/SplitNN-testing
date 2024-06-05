@@ -8,7 +8,7 @@ cd teste
 
 git clone https://github.com/ClaroHenrique/SplitNN-testing.git
 cd ~/teste/SplitNN-testing/cloudclustersjl_studycase
-git checkout gpu-support
+# git checkout gpu-support
 
 julia --project=.
 # ] instantiate

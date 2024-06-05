@@ -21,6 +21,7 @@ println("Initializating")
 learning_rate = 0.001
 batch_size = 32
 iterations_per_client = 100
+num_interations = 100
 
 # Define model
 # model_name = "custom"
@@ -31,6 +32,7 @@ model_name = "resnet18"
 
 include("src/models/get_model.jl")
 model, img_dims = get_model(model_name)
+model |> gpu
 
 # Download dataset
 train_data = CIFAR10(split=:train)[:]
@@ -53,19 +55,20 @@ partial_test_loader = dataset_loader(test_data,
   n_batches=iterations_per_client,
 ) # Run test using less instances
 
+optimizer = Flux.setup(Flux.Optimisers.Adam(learning_rate), model) |> gpu
 
 # Log model initial test accuracy
 initial_timestamp = now()
-log_model_accuracy(model |> gpu, test_loader; iteration=0, timestamp=now() - initial_timestamp)
+log_model_accuracy(model, test_loader; iteration=0, timestamp=now() - initial_timestamp)
 
 # Begin distributed training
 println("Start training")
-num_interations = 100
 
 @profile @showprogress for it in 1:num_interations
-  global model
-  model = train_client(model, train_loader)
-  log_model_accuracy(model |> gpu, partial_test_loader; iteration=it, timestamp=now()-initial_timestamp)
+  Flux.train!(model, data_loader, optimizer) do m, x, y
+    y_hat = m(x)
+    Flux.logitcrossentropy(y_hat, y)
+  end
 end
 
 println("Complete test accuracy")
