@@ -15,9 +15,10 @@ include("src/train_client.jl")
 include("src/dataset_loader.jl")
 include("src/models/get_model.jl")
 
+num_procs = 2
 learning_rate = 0.001
 batch_size = 32
-iterations_per_client = 200
+iterations_per_client = div(1600, num_procs)
 
 # Define model
 # model_name = "custom"
@@ -46,7 +47,7 @@ partial_test_loader = dataset_loader(test_data,
 ### Inicitalizate client nodes ###
 # all nodes but master (id=1) are clients
 println("Initializating clients")
-addprocs(1)
+addprocs(num_procs)
 
 @everywhere workers() begin
   import Pkg
