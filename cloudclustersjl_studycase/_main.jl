@@ -15,7 +15,7 @@ include("src/train_client.jl")
 
 # all nodes but master (id=0) are clients
 println("Initializating clients")
-addprocs(1)
+addprocs(4)
 
 @everywhere workers() begin
   #using Pkg; Pkg.activate(@__DIR__)
@@ -34,7 +34,7 @@ addprocs(1)
   # Define global constants
   learning_rate = 0.001
   batch_size = 32
-  iterations_per_client = 100
+  iterations_per_client = 400
 
   # Create local data loader
   data_loader = dataset_loader(batch_size) 
