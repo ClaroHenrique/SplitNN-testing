@@ -32,7 +32,7 @@ model_name = "resnet18"
 
 include("src/models/get_model.jl")
 model, img_dims = get_model(model_name)
-model |> gpu
+model = model |> gpu
 
 # Download dataset
 train_data = CIFAR10(split=:train)[:]
@@ -65,10 +65,12 @@ log_model_accuracy(model, test_loader; iteration=0, timestamp=now() - initial_ti
 println("Start training")
 
 @profile @showprogress for it in 1:num_interations
-  Flux.train!(model, data_loader, optimizer) do m, x, y
+  Flux.train!(model, train_loader, optimizer) do m, x, y
     y_hat = m(x)
     Flux.logitcrossentropy(y_hat, y)
   end
+
+  log_model_accuracy(model, partial_test_loader; iteration=it, timestamp=now() - initial_timestamp)
 end
 
 println("Complete test accuracy")
