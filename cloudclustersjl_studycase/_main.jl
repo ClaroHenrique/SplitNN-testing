@@ -39,11 +39,6 @@ test_loader = dataset_loader(test_data,
   img_dims=img_dims,
   #n_batches=10000,
 )
-partial_test_loader = dataset_loader(test_data,
-  batch_size=batch_size,
-  img_dims=img_dims,
-  #n_batches=iterations_per_client,
-) # Run test using less instances
 
 ### Inicitalizate client nodes ###
 # all nodes but master (id=1) are clients
@@ -100,7 +95,7 @@ end
 
 println("Log initial test accuracy")
 initial_timestamp = now()
-@time log_model_accuracy(model |> gpu, partial_test_loader; iteration=0, timestamp=now() - initial_timestamp)
+@time log_model_accuracy(model |> gpu, test_loader; iteration=0, timestamp=now() - initial_timestamp)
 
 # Begin distributed training
 println("Start training")
@@ -123,7 +118,7 @@ num_iterations = 100
   model = aggregate(local_models) 
 
   # Print partial accuracy
-  @time log_model_accuracy(model |> gpu, partial_test_loader; iteration=it, timestamp=now() - initial_timestamp)
+  @time log_model_accuracy(model |> gpu, test_loader; iteration=it, timestamp=now() - initial_timestamp)
 end
 
 println("Full test accuracy:")
