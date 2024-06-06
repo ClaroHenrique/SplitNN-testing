@@ -2,7 +2,7 @@ using Flux, MLDatasets, Images
 using CUDA
 
 
-function dataset_loader(data; img_dims, batch_size=32, n_batches=2^50)
+function dataset_loader(data; img_dims, batch_size=32#=, n_batches=2^50=#)
   # Load training data (images, labels)
   x_train, y_train = data
 
@@ -18,12 +18,12 @@ function dataset_loader(data; img_dims, batch_size=32, n_batches=2^50)
   DataLoaderTransform(
     data=x_train,
     label=y_train,
-    n_batches=n_batches,
+#    n_batches=n_batches,
     fx=fx,
     fy=fy,
     batch_size=batch_size,
     partial=false,
-    shuffle=true
+    shuffle=false
   );
 end
 
@@ -40,24 +40,24 @@ end
 # Iterate over data with lazy transform #
 struct DataLoaderTransform
   data_loader::Flux.DataLoader
-  n_batches::Int
+  #n_batches::Int
   fx::Function
   fy::Function
 
-  function DataLoaderTransform(;data, label, n_batches, fx, fy, batch_size, partial, shuffle)
+  function DataLoaderTransform(;data, label#=, n_batches=#, fx, fy, batch_size, partial, shuffle)
     data_loader = Flux.DataLoader(
       (data=data, label=label),
       batchsize=batch_size,
       partial=partial,
       shuffle=shuffle,
     )
-    new(data_loader, n_batches, fx, fy)
+    new(data_loader #=, n_batches=#, fx, fy)
   end
 end 
-
+ 
 function Base.iterate(dlt::DataLoaderTransform)
   next = iterate(dlt.data_loader)
-  if isnothing(next) || next[2][2] > dlt.n_batches
+  if isnothing(next) #=|| next[2][2] > dlt.n_batches=#
     return nothing
   end
   ((x, y), state) = next
@@ -66,7 +66,7 @@ end
 
 function Base.iterate(dlt::DataLoaderTransform, state)
   next = iterate(dlt.data_loader, state)
-  if isnothing(next) || next[2][2] > dlt.n_batches
+  if isnothing(next) #=|| next[2][2] > dlt.n_batches=#
     return nothing
   end
 

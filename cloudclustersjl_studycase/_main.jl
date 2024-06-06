@@ -15,6 +15,7 @@ include("src/train_client.jl")
 include("src/dataset_loader.jl")
 include("src/models/get_model.jl")
 
+nprocs = 1
 learning_rate = 0.001
 batch_size = 32
 iterations_per_client = 200
@@ -31,22 +32,28 @@ model, img_dims = get_model(model_name)
 train_data = CIFAR10(split=:train)[:]
 test_data = CIFAR10(split=:test)[:]
 
+
 # Define data loaders
 test_loader = dataset_loader(test_data,
   batch_size=batch_size,
   img_dims=img_dims,
-  n_batches=10000,
+  #n_batches=10000,
 )
 partial_test_loader = dataset_loader(test_data,
   batch_size=batch_size,
   img_dims=img_dims,
-  n_batches=iterations_per_client,
+  #n_batches=iterations_per_client,
 ) # Run test using less instances
 
 ### Inicitalizate client nodes ###
 # all nodes but master (id=1) are clients
 println("Initializating clients")
-addprocs(1)
+addprocs(nprocs)
+
+#for w in workers()
+#  train_data_client = fetch_partition(train_data, w, nprocs)
+#  @everywhere [i] global train_data = $train_data_client
+#end
 
 @everywhere workers() begin
   import Pkg
@@ -69,12 +76,23 @@ addprocs(1)
   img_dims = $img_dims
   iterations_per_client = $iterations_per_client
 
+  function fetch_partition(dataset, i, nprocs)
+    @assert i>=1 && i<=nprocs
+    size_partition = div(length(dataset[:targets]),nprocs)
+    a = (i-1)*size_partition + 1
+    b = i*size_partition 
+    @info a,b
+    return (features = dataset[:features][:,:,:,a:b], targets = dataset[:targets][a:b])
+  end
+  
   # Create local data loader
-  train_data = CIFAR10(split=:train)[:]
+  train_data = fetch_partition(CIFAR10(split=:train)[:], myid()-1, $nprocs)
+  @info "===> $(length(train_data[:targets]))"
+
   train_loader = dataset_loader(train_data,
     batch_size=batch_size,
     img_dims=img_dims,
-    n_batches=iterations_per_client,
+    #n_batches=iterations_per_client,
   )
 
   train_client(model) = train_client(model, train_loader)
@@ -82,7 +100,7 @@ end
 
 println("Log initial test accuracy")
 initial_timestamp = now()
-log_model_accuracy(model |> gpu, partial_test_loader; iteration=0, timestamp=now() - initial_timestamp)
+@time log_model_accuracy(model |> gpu, partial_test_loader; iteration=0, timestamp=now() - initial_timestamp)
 
 # Begin distributed training
 println("Start training")
@@ -105,7 +123,7 @@ num_iterations = 100
   model = aggregate(local_models) 
 
   # Print partial accuracy
-  log_model_accuracy(model |> gpu, partial_test_loader; iteration=it, timestamp=now() - initial_timestamp)
+  @time log_model_accuracy(model |> gpu, partial_test_loader; iteration=it, timestamp=now() - initial_timestamp)
 end
 
 println("Full test accuracy:")
