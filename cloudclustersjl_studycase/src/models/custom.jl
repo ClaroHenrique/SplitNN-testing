@@ -1,6 +1,3 @@
-using Flux
-using MLUtils
-
 custom_model = Chain(
   Conv((3, 3), 3 => 32, relu, pad=1),   # 896 parameters
   Conv((3, 3), 32 => 32, relu, pad=1),  # 9_248 parameters

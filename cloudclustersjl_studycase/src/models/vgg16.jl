@@ -1,5 +1,3 @@
-using MLUtils
-using Flux
 
 vgg16 = Chain(
   Conv((3, 3), 3 => 64, relu, pad=1),  # 1_792 parameters
