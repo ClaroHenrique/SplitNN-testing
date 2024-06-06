@@ -18,7 +18,7 @@ include("src/models/get_model.jl")
 nprocs = 1
 learning_rate = 0.001
 batch_size = 32
-iterations_per_client = 200
+#iterations_per_client = 200
 
 # Define model
 # model_name = "custom"
@@ -74,7 +74,7 @@ addprocs(nprocs)
   learning_rate = $learning_rate
   batch_size = $batch_size
   img_dims = $img_dims
-  iterations_per_client = $iterations_per_client
+  #iterations_per_client = $iterations_per_client
 
   function fetch_partition(dataset, i, nprocs)
     @assert i>=1 && i<=nprocs
