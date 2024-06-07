@@ -27,8 +27,6 @@ end
 
 function train_the_model(model_name, dataset, workers; learning_rate=0.001, batch_size=32)
     
-  initial_timestamp = now()
-
   nprocs = length(workers)
 
   # Get the model
@@ -89,6 +87,7 @@ function train_the_model(model_name, dataset, workers; learning_rate=0.001, batc
     train_client(model) = train_client(model, train_loader)
   end
 
+  initial_timestamp = now()
   println("computing initial test accuracy ...")
   
   @time log_model_accuracy(model |> gpu, test_loader; iteration=0, timestamp=now() - initial_timestamp)
