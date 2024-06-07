@@ -98,8 +98,8 @@ function train_the_model(model_name, dataset, workers; learning_rate=0.001, batc
 
   model = Ref(model)
 
-  training_time = 0
-  accuracy_time = 0
+  training_time = Millisecond(0)
+  accuracy_time = Millisecond(0)
 
   @profile @showprogress for it in 1:num_iterations    
 
