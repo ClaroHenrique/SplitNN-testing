@@ -27,7 +27,7 @@ end
 
 function train_the_model(model_name, dataset, workers; learning_rate=0.001, batch_size=32)
     
-  initial_time_stamp = now()
+  initial_timestamp = now()
 
   nprocs = length(workers)
 
@@ -91,7 +91,7 @@ function train_the_model(model_name, dataset, workers; learning_rate=0.001, batc
 
   println("computing initial test accuracy ...")
   
-  @time log_model_accuracy(model |> gpu, test_loader; iteration=0, timestamp=now() - initial_time_stamp)
+  @time log_model_accuracy(model |> gpu, test_loader; iteration=0, timestamp=now() - initial_timestamp)
 
   # Begin distributed training
   println("start training !")
