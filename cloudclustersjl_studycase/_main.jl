@@ -27,7 +27,7 @@ end
 
 function train_the_model(model_name, dataset, workers; learning_rate=0.001, batch_size=32)
     
-  initial_time_stamp = 0
+  initial_time_stamp = now()
 
   nprocs = length(workers)
 
