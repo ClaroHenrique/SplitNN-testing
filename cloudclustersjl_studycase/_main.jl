@@ -87,10 +87,10 @@ function train_the_model(model_name, dataset, workers; learning_rate=0.001, batc
     train_client(model) = train_client(model, train_loader)
   end
 
-  initial_timestamp = now()
   println("computing initial test accuracy ...")
   
-  @time log_model_accuracy(model |> gpu, test_loader; iteration=0, timestamp=now() - initial_timestamp)
+  initial_timestamp = now()
+  log_model_accuracy(model |> gpu, test_loader; iteration=0, timestamp=now() - initial_timestamp)
 
   # Begin distributed training
   println("start training !")
@@ -122,7 +122,7 @@ function train_the_model(model_name, dataset, workers; learning_rate=0.001, batc
 
     interation_accuracy_time = now()
     # Print partial accuracy
-    @time log_model_accuracy(model[] |> gpu, test_loader; iteration=it, timestamp = now() - initial_timestamp)
+    log_model_accuracy(model[] |> gpu, test_loader; iteration=it, timestamp = now() - initial_timestamp)
     interation_accuracy_time = now() - interation_accuracy_time
 
     training_time += interation_training_time
