@@ -82,6 +82,7 @@ function train_the_model(model_name, dataset, workers; learning_rate=0.001, batc
     )
 
     CUDA.device!(mod(indexin(myid(), procs(myid())),CUDA.ndevices()))
+    @info "process $(myid()) using device $(CUDA.device())"
 
     train_client(model) = train_client(model, train_loader)
   end
