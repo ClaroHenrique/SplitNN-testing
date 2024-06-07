@@ -27,6 +27,8 @@ end
 
 function train_the_model(model_name, dataset, workers; learning_rate=0.001, batch_size=32)
     
+  initial_time_stamp = 0
+
   nprocs = length(workers)
 
   # Get the model
@@ -88,8 +90,8 @@ function train_the_model(model_name, dataset, workers; learning_rate=0.001, batc
   end
 
   println("computing initial test accuracy ...")
-  initial_timestamp = now()
-  @time log_model_accuracy(model |> gpu, test_loader; iteration=0, timestamp=now() - initial_timestamp)
+  
+  @time log_model_accuracy(model |> gpu, test_loader; iteration=0, timestamp=now() - initial_time_stamp)
 
   # Begin distributed training
   println("start training !")
@@ -97,7 +99,12 @@ function train_the_model(model_name, dataset, workers; learning_rate=0.001, batc
 
   model = Ref(model)
 
+  training_time = 0
+  accuracy_time = 0
+
   @profile @showprogress for it in 1:num_iterations    
+
+    interation_training_time = now()
 
     # Send global model to clients and start the training
     f_references = map(workers) do client_id
@@ -112,8 +119,19 @@ function train_the_model(model_name, dataset, workers; learning_rate=0.001, batc
     # Aggregate clients' results
     model[] = aggregate(local_models) 
 
+    interation_training_time = now() - interation_training_time
+
+    interation_accuracy_time = now()
     # Print partial accuracy
-    @time log_model_accuracy(model[] |> gpu, test_loader; iteration=it, timestamp=now() - initial_timestamp)
+    @time log_model_accuracy(model[] |> gpu, test_loader; iteration=it, timestamp = now() - initial_timestamp)
+    interation_accuracy_time = now() - interation_accuracy_time
+
+    training_time += interation_training_time
+    accuracy_time += interation_accuracy_time
+
+    @info "iteration training time: $(interation_training_time), overall training time: $(training_time)"
+    @info "iteration accuracy time: $(interation_accuracy_time), overall accuracy time: $(accuracy_time)"
+
   end
 
 end
