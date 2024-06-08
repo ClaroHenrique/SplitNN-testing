@@ -58,7 +58,6 @@ function train_the_model(model_name, dataset; learning_rate=0.001, batch_size=32
   accuracy_time = Millisecond(0)
 
   @profile @showprogress for it in 1:num_interations
-    global model
 
     interation_training_time = now()
 
