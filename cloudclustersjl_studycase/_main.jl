@@ -84,7 +84,7 @@ function train_the_model(model_name, dataset, workers; learning_rate=0.001, batc
     CUDA.device!(mod(indexin(myid(), procs(myid()))[1],CUDA.ndevices()))
     @info "process $(myid()) using device $(CUDA.device())"
 
-    train_client(model) = train_client(model, train_loader)
+    train_client(model) = train_client(model, train_loader, learning_rate)
   end
 
   println("computing initial test accuracy ...")

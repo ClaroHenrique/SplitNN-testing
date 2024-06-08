@@ -61,7 +61,7 @@ function train_the_model(model_name, dataset; learning_rate=0.001, batch_size=32
 
     interation_training_time = now()
 
-    model = train_client(model, train_loader)
+    model = train_client(model, train_loader, learning_rate)
 
     interation_training_time = now() - interation_training_time
 

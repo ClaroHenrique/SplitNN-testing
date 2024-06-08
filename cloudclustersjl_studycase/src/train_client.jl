@@ -1,7 +1,7 @@
 using Flux
 #using CUDA   ***
 
-function train_client(model, data_loader)
+function train_client(model, data_loader, learning_rate)
   model = model |> gpu
   optimizer = Flux.setup(Flux.Optimisers.Adam(learning_rate), model) |> gpu
 
