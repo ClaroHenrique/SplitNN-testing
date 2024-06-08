@@ -115,6 +115,10 @@ function train_the_model(model_name, dataset, workers; learning_rate=0.001, batc
       fetch(client_model_future_ref)
     end
 
+    for lm in local_models
+      log_model_accuracy(lm |> gpu, test_loader; iteration=it, timestamp = now() - initial_timestamp)
+    end
+
     # Aggregate clients' results
     model[] = aggregate(local_models) 
 
