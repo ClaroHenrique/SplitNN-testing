@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package distributed_learning;
+
+service DistributedClient {
+ rpc Forward(Query) returns (Tensor) {}
+ rpc Backward(Tensor) returns (Query) {}
+
+ rpc TestInference(Query) returns (Tensor) {}
+}
+
+message Query {
+  int32 batch_size = 1;
+  int32 request_id = 2;
+  int32 status = 3;
+}
+
+message Tensor {
+  bytes tensor = 1;
+  bytes label = 2;
+}
