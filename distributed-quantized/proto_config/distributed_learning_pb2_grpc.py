@@ -49,6 +49,16 @@ class DistributedClientStub(object):
                 request_serializer=distributed__learning__pb2.Tensor.SerializeToString,
                 response_deserializer=distributed__learning__pb2.Query.FromString,
                 _registered_method=True)
+        self.GetModelState = channel.unary_unary(
+                '/distributed_learning.DistributedClient/GetModelState',
+                request_serializer=distributed__learning__pb2.Empty.SerializeToString,
+                response_deserializer=distributed__learning__pb2.ModelState.FromString,
+                _registered_method=True)
+        self.SetModelState = channel.unary_unary(
+                '/distributed_learning.DistributedClient/SetModelState',
+                request_serializer=distributed__learning__pb2.ModelState.SerializeToString,
+                response_deserializer=distributed__learning__pb2.Empty.FromString,
+                _registered_method=True)
         self.TestInference = channel.unary_unary(
                 '/distributed_learning.DistributedClient/TestInference',
                 request_serializer=distributed__learning__pb2.Query.SerializeToString,
@@ -66,6 +76,18 @@ class DistributedClientServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Backward(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetModelState(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetModelState(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -89,6 +111,16 @@ def add_DistributedClientServicer_to_server(servicer, server):
                     servicer.Backward,
                     request_deserializer=distributed__learning__pb2.Tensor.FromString,
                     response_serializer=distributed__learning__pb2.Query.SerializeToString,
+            ),
+            'GetModelState': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetModelState,
+                    request_deserializer=distributed__learning__pb2.Empty.FromString,
+                    response_serializer=distributed__learning__pb2.ModelState.SerializeToString,
+            ),
+            'SetModelState': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetModelState,
+                    request_deserializer=distributed__learning__pb2.ModelState.FromString,
+                    response_serializer=distributed__learning__pb2.Empty.SerializeToString,
             ),
             'TestInference': grpc.unary_unary_rpc_method_handler(
                     servicer.TestInference,
@@ -150,6 +182,60 @@ class DistributedClient(object):
             '/distributed_learning.DistributedClient/Backward',
             distributed__learning__pb2.Tensor.SerializeToString,
             distributed__learning__pb2.Query.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetModelState(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/distributed_learning.DistributedClient/GetModelState',
+            distributed__learning__pb2.Empty.SerializeToString,
+            distributed__learning__pb2.ModelState.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetModelState(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/distributed_learning.DistributedClient/SetModelState',
+            distributed__learning__pb2.ModelState.SerializeToString,
+            distributed__learning__pb2.Empty.FromString,
             options,
             channel_credentials,
             insecure,

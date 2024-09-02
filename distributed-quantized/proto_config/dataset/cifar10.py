@@ -18,7 +18,7 @@ def get_data_loaders(batch_size, client_id):
 
     # Create a data loader
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
-    test_dataloader = DataLoader(test_dataset, batch_size=512) #TODO: arbitrary bath_size
+    test_dataloader = DataLoader(test_dataset, batch_size=1024) #TODO: arbitrary bath_size
 
     return train_dataloader, test_dataloader
 

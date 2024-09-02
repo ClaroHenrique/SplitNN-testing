@@ -36,7 +36,7 @@ def load_model():
 
 train_data_loader, test_data_loader = get_data_loaders(batch_size=32, client_id=1)
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(client_model.parameters(), lr=0.001, momentum=0.9)
+optimizer = torch.optim.SGD(client_model.parameters(), lr=0.01, momentum=0.9)
 last_outputs = None
 
 
@@ -83,6 +83,17 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
         grad = pickle.loads(tensor)
         process_backward_query(grad)
         return pb2.Query(batch_size=-1, request_id=-1, status=1)
+
+    def GetModelState(self, request, context):
+        model_state = client_model.state_dict()
+        model_state = pickle.dumps(model_state)
+        return pb2.ModelState(state=model_state)
+
+    def SetModelState(self, request, context):
+        tensor = request.state
+        model_state = pickle.loads(model_state)
+        client_model.load_state_dict(model_state)
+        return pb2.Empty()
     
     def TestInference(self, request, context):
         batch_size = request.batch_size

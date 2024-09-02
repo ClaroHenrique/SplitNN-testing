@@ -6,6 +6,9 @@ service DistributedClient {
  rpc Forward(Query) returns (Tensor) {}
  rpc Backward(Tensor) returns (Query) {}
 
+ rpc GetModelState(Empty) returns (ModelState) {}
+ rpc SetModelState(ModelState) returns (Empty) {}
+
  rpc TestInference(Query) returns (Tensor) {}
 }
 
@@ -19,3 +22,9 @@ message Tensor {
   bytes tensor = 1;
   bytes label = 2;
 }
+
+message ModelState {
+  bytes state = 1;
+}
+
+message Empty {}
