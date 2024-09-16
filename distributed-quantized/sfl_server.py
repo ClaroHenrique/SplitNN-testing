@@ -6,7 +6,8 @@ import distributed_learning_pb2_grpc as pb2_grpc
 import distributed_learning_pb2 as pb2
 import pickle
 
-from model.mycnn import ServerModel
+from model.testcnn import ServerModel
+from optimizer.adam import create_optimizer
 
 import torch
 from torch import nn
@@ -15,6 +16,10 @@ from torch.nn import functional as F
 
 load_dotenv()
 server_model = ServerModel()
+
+loss_fn = nn.CrossEntropyLoss()
+learning_rate = os.getenv("LEARNING_RATE")
+optimizer = create_optimizer(server_model.parameters(), learning_rate)
 
 def save_model():
     # initialize model #
@@ -26,9 +31,6 @@ def load_model():
     global client_model
     if os.path.exists():
         client_model = torch.load("./model_state/client")
-
-loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(server_model.parameters(), lr=0.01, momentum=0.9)
 
 def server_forward(tensor_IR, labels):
     # update server model, returns grad of the input 
@@ -62,8 +64,12 @@ class DistributedClient(object):
     """
     Client for gRPC functionality
     """
-    def __init__(self, address):
-        self.channel = grpc.insecure_channel(address)            # instantiate a channel
+    def __init__(self, address, message_max_size):
+        options=[
+            ('grpc.max_send_message_length', message_max_size),
+            ('grpc.max_receive_message_length', message_max_size),
+        ]
+        self.channel = grpc.insecure_channel(address, options)            # instantiate a channel
         self.stub = pb2_grpc.DistributedClientStub(self.channel) # bind the client and the server
 
     def forward(self, batch_size, request_id):
@@ -71,9 +77,11 @@ class DistributedClient(object):
         response = self.stub.Forward(query)
         tensor_IR = pickle.loads(response.tensor)
         labels = pickle.loads(response.label)
+        print("IR", tensor_IR, labels)
         return tensor_IR, labels
 
     def backward(self, grad): # TODO: implement request_id
+        print("GRAD", grad)
         grad = pickle.dumps(grad)
         tensor = pb2.Tensor(tensor=grad, label=None)
         return self.stub.Backward(tensor)
@@ -158,10 +166,11 @@ def aggregate_client_model_params(clients):
 
 if __name__ == '__main__':
     client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
+    message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
-    clients = [DistributedClient(address=address) for address in client_addresses]
+    clients = [DistributedClient(address, message_max_size) for address in client_addresses]
 
-    num_iterations = 2000
+    num_iterations = 1
 
     for i in range(num_iterations):
         train_client_server_models(clients)

@@ -10,11 +10,10 @@ def get_data_loaders(batch_size, client_id):
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        #transforms.Resize((64, 64)),
     ]) # 32x32
 
-    train_dataset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
-    test_dataset = torchvision.datasets.CIFAR10(root='../../data', train=True, download=True, transform=transform)
+    train_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform)
+    test_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform)
 
     # Create a data loader
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
