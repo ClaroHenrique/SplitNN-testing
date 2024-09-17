@@ -15,8 +15,8 @@ import distributed_learning_pb2 as pb2
 import grpc
 from concurrent import futures
 import time
-from model.testcnn import ClientModel
-from dataset.test_cifar10 import get_data_loaders
+from model.mycnn import ClientModel
+from dataset.cifar10 import get_data_loaders #TODO use test dataset
 from optimizer.adam import create_optimizer
 
 load_dotenv()
@@ -38,6 +38,16 @@ learning_rate = float(os.getenv("LEARNING_RATE"))
 print("LR", learning_rate)
 
 train_data_loader, test_data_loader = get_data_loaders(batch_size=batch_size, client_id=1)
+train_iter, test_iter = iter(train_data_loader), iter(test_data_loader)
+
+def get_train_sample():
+    global train_iter
+    el = next(train_iter, None)
+    if el == None:
+        train_iter = iter(train_data_loader)
+        el = next(train_iter, None)
+    return el
+
 loss_fn = nn.CrossEntropyLoss()
 optimizer = create_optimizer(client_model.parameters(), learning_rate)
 last_outputs = None
@@ -46,7 +56,7 @@ def process_forward_query(batch_size, request_id):
     global last_outputs
 
     optimizer.zero_grad()
-    inputs, labels = next(iter(train_data_loader))
+    inputs, labels = get_train_sample()
     outputs = client_model(inputs)
 
     last_outputs = outputs

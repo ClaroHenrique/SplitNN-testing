@@ -11,7 +11,6 @@ class ClientModel(nn.Module):
       self.pool1 = nn.MaxPool2d(2, 2)
       self.drop1 = nn.Dropout2d(p=0.25)
 
-
   def forward(self, x):
       x = self.conv1(x)
       x = F.relu(x)
@@ -19,9 +18,7 @@ class ClientModel(nn.Module):
       x = F.relu(x)
       x = self.pool1(x)
       x = self.drop1(x)
-
       return x
-
 
 
 class ServerModel(nn.Module):

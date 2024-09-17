@@ -6,19 +6,19 @@ import distributed_learning_pb2_grpc as pb2_grpc
 import distributed_learning_pb2 as pb2
 import pickle
 
-from model.testcnn import ServerModel
+from model.mycnn import ServerModel
 from optimizer.adam import create_optimizer
+from utils.utils import debug_print
 
 import torch
 from torch import nn
-from torch.utils.data import DataLoader
 from torch.nn import functional as F
 
 load_dotenv()
 server_model = ServerModel()
 
 loss_fn = nn.CrossEntropyLoss()
-learning_rate = os.getenv("LEARNING_RATE")
+learning_rate = float(os.getenv("LEARNING_RATE"))
 optimizer = create_optimizer(server_model.parameters(), learning_rate)
 
 def save_model():
@@ -41,8 +41,9 @@ def server_forward(tensor_IR, labels):
     loss = loss_fn(outputs, labels)
     loss.backward()
     optimizer.step()
-    #print("updating server model")
-    return tensor_IR.grad.detach().requires_grad_(False)
+    debug_print("updating server model")
+    print(torch.unique(labels, return_counts=True))
+    return tensor_IR.grad.detach()
 
 def server_test_inference(tensor_IR, labels):
     # update server model, returns grad of the input
@@ -50,6 +51,7 @@ def server_test_inference(tensor_IR, labels):
     correct = 0
     total = 0
     loss = 0
+    print(torch.unique(labels, return_counts=True))
     with torch.no_grad():
         tensor_IR.requires_grad = False
         outputs = server_model(tensor_IR)
@@ -77,11 +79,11 @@ class DistributedClient(object):
         response = self.stub.Forward(query)
         tensor_IR = pickle.loads(response.tensor)
         labels = pickle.loads(response.label)
-        print("IR", tensor_IR, labels)
+        debug_print("IR", tensor_IR, labels)
         return tensor_IR, labels
 
     def backward(self, grad): # TODO: implement request_id
-        print("GRAD", grad)
+        debug_print("GRAD", grad)
         grad = pickle.dumps(grad)
         tensor = pb2.Tensor(tensor=grad, label=None)
         return self.stub.Backward(tensor)
@@ -119,7 +121,7 @@ def train_client_server_models(clients):
     concat_labels = torch.concatenate(clients_labels).detach()
     concat_IRs_grad = server_forward(concat_IRs, concat_labels)
 
-    #print(concat_IRs.sum())
+    debug_print(concat_IRs.sum())
 
     # Send IRs gradients back to the clients (train client model)
     clients_IRs_grad = concat_IRs_grad.split(client_batch_size)
@@ -131,11 +133,11 @@ def print_test_accuracy(clients):
     total = 0
     loss = 0
     for client in clients:
-        tensor_IR, labels = client.test_inference(batch_size=32)
+        tensor_IR, labels = client.test_inference(batch_size=32) #TODO fix batchsize
         c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
         correct += c_correct
         total += c_total
-        loss += c_loss.item() / len(clients)    
+        loss += c_loss.item() / len(clients)
     print(f"Accuracy: {correct} / {total} = {correct / total}")
     print(f"Loss: ", loss)
     print()
@@ -170,14 +172,17 @@ if __name__ == '__main__':
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
 
-    num_iterations = 1
+    num_iterations = 1000
 
     for i in range(num_iterations):
+        if(i % 20 == 0):
+            print_test_accuracy(clients)
         train_client_server_models(clients)
         aggregate_client_model_params(clients)
         # Estimate test dataset error
-        if(i % 10 == 0):
-            print_test_accuracy(clients)
+
+    print_test_accuracy(clients)
+
 
 
 # # send client_model weights to the server for aggregation
