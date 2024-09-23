@@ -3,13 +3,20 @@ syntax = "proto3";
 package distributed_learning;
 
 service DistributedClient {
- rpc Forward(Query) returns (Tensor) {}
- rpc Backward(Tensor) returns (Query) {}
+  // Training model
+  rpc Forward(Query) returns (Tensor) {}
+  rpc Backward(Tensor) returns (Query) {}
 
- rpc GetModelState(Empty) returns (ModelState) {}
- rpc SetModelState(ModelState) returns (Empty) {}
+  // Aggregate model
+  rpc GetModelState(Empty) returns (ModelState) {}
+  rpc SetModelState(ModelState) returns (Empty) {}
 
- rpc TestInference(Query) returns (Tensor) {}
+  // Quantize model
+  rpc GenerateQuantizedModel(Empty) returns (Empty) {}
+
+  // Test model precision
+  rpc TestInference(Query) returns (Tensor) {}
+  rpc TestQuantizedInference(Query) returns (Tensor) {}
 }
 
 message Query {
@@ -21,10 +28,15 @@ message Query {
 message Tensor {
   bytes tensor = 1;
   bytes label = 2;
+  int32 request_id = 3;
 }
 
 message ModelState {
   bytes state = 1;
+}
+
+message Measures {
+  bytes measures = 1;
 }
 
 message Empty {}

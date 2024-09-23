@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1a\x64istributed_learning.proto\x12\x14\x64istributed_learning\"?\n\x05Query\x12\x12\n\nbatch_size\x18\x01 \x01(\x05\x12\x12\n\nrequest_id\x18\x02 \x01(\x05\x12\x0e\n\x06status\x18\x03 \x01(\x05\"\'\n\x06Tensor\x12\x0e\n\x06tensor\x18\x01 \x01(\x0c\x12\r\n\x05label\x18\x02 \x01(\x0c\"\x1b\n\nModelState\x12\r\n\x05state\x18\x01 \x01(\x0c\"\x07\n\x05\x45mpty2\x96\x03\n\x11\x44istributedClient\x12\x46\n\x07\x46orward\x12\x1b.distributed_learning.Query\x1a\x1c.distributed_learning.Tensor\"\x00\x12G\n\x08\x42\x61\x63kward\x12\x1c.distributed_learning.Tensor\x1a\x1b.distributed_learning.Query\"\x00\x12P\n\rGetModelState\x12\x1b.distributed_learning.Empty\x1a .distributed_learning.ModelState\"\x00\x12P\n\rSetModelState\x12 .distributed_learning.ModelState\x1a\x1b.distributed_learning.Empty\"\x00\x12L\n\rTestInference\x12\x1b.distributed_learning.Query\x1a\x1c.distributed_learning.Tensor\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1a\x64istributed_learning.proto\x12\x14\x64istributed_learning\"?\n\x05Query\x12\x12\n\nbatch_size\x18\x01 \x01(\x05\x12\x12\n\nrequest_id\x18\x02 \x01(\x05\x12\x0e\n\x06status\x18\x03 \x01(\x05\";\n\x06Tensor\x12\x0e\n\x06tensor\x18\x01 \x01(\x0c\x12\r\n\x05label\x18\x02 \x01(\x0c\x12\x12\n\nrequest_id\x18\x03 \x01(\x05\"\x1b\n\nModelState\x12\r\n\x05state\x18\x01 \x01(\x0c\"\x1c\n\x08Measures\x12\x10\n\x08measures\x18\x01 \x01(\x0c\"\x07\n\x05\x45mpty2\xc3\x04\n\x11\x44istributedClient\x12\x46\n\x07\x46orward\x12\x1b.distributed_learning.Query\x1a\x1c.distributed_learning.Tensor\"\x00\x12G\n\x08\x42\x61\x63kward\x12\x1c.distributed_learning.Tensor\x1a\x1b.distributed_learning.Query\"\x00\x12P\n\rGetModelState\x12\x1b.distributed_learning.Empty\x1a .distributed_learning.ModelState\"\x00\x12P\n\rSetModelState\x12 .distributed_learning.ModelState\x1a\x1b.distributed_learning.Empty\"\x00\x12T\n\x16GenerateQuantizedModel\x12\x1b.distributed_learning.Empty\x1a\x1b.distributed_learning.Empty\"\x00\x12L\n\rTestInference\x12\x1b.distributed_learning.Query\x1a\x1c.distributed_learning.Tensor\"\x00\x12U\n\x16TestQuantizedInference\x12\x1b.distributed_learning.Query\x1a\x1c.distributed_learning.Tensor\"\x00\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -24,11 +24,13 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_QUERY']._serialized_start=52
   _globals['_QUERY']._serialized_end=115
   _globals['_TENSOR']._serialized_start=117
-  _globals['_TENSOR']._serialized_end=156
-  _globals['_MODELSTATE']._serialized_start=158
-  _globals['_MODELSTATE']._serialized_end=185
-  _globals['_EMPTY']._serialized_start=187
-  _globals['_EMPTY']._serialized_end=194
-  _globals['_DISTRIBUTEDCLIENT']._serialized_start=197
-  _globals['_DISTRIBUTEDCLIENT']._serialized_end=603
+  _globals['_TENSOR']._serialized_end=176
+  _globals['_MODELSTATE']._serialized_start=178
+  _globals['_MODELSTATE']._serialized_end=205
+  _globals['_MEASURES']._serialized_start=207
+  _globals['_MEASURES']._serialized_end=235
+  _globals['_EMPTY']._serialized_start=237
+  _globals['_EMPTY']._serialized_end=244
+  _globals['_DISTRIBUTEDCLIENT']._serialized_start=247
+  _globals['_DISTRIBUTEDCLIENT']._serialized_end=826
 # @@protoc_insertion_point(module_scope)

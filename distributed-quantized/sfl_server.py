@@ -19,6 +19,8 @@ server_model = ServerModel()
 
 loss_fn = nn.CrossEntropyLoss()
 learning_rate = float(os.getenv("LEARNING_RATE"))
+client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
+global_request_id = 1
 optimizer = create_optimizer(server_model.parameters(), learning_rate)
 
 def save_model():
@@ -42,7 +44,7 @@ def server_forward(tensor_IR, labels):
     loss.backward()
     optimizer.step()
     debug_print("updating server model")
-    print(torch.unique(labels, return_counts=True))
+    debug_print(torch.unique(labels, return_counts=True))
     return tensor_IR.grad.detach()
 
 def server_test_inference(tensor_IR, labels):
@@ -51,7 +53,7 @@ def server_test_inference(tensor_IR, labels):
     correct = 0
     total = 0
     loss = 0
-    print(torch.unique(labels, return_counts=True))
+    debug_print(torch.unique(labels, return_counts=True))
     with torch.no_grad():
         tensor_IR.requires_grad = False
         outputs = server_model(tensor_IR)
@@ -79,13 +81,14 @@ class DistributedClient(object):
         response = self.stub.Forward(query)
         tensor_IR = pickle.loads(response.tensor)
         labels = pickle.loads(response.label)
+        request_id = response.request_id
         debug_print("IR", tensor_IR, labels)
-        return tensor_IR, labels
+        return tensor_IR, labels, request_id
 
-    def backward(self, grad): # TODO: implement request_id
+    def backward(self, grad, request_id): # TODO: implement request_id
         debug_print("GRAD", grad)
         grad = pickle.dumps(grad)
-        tensor = pb2.Tensor(tensor=grad, label=None)
+        tensor = pb2.Tensor(tensor=grad, label=None, request_id=request_id)
         return self.stub.Backward(tensor)
     
     def get_model_state(self):
@@ -109,13 +112,17 @@ class DistributedClient(object):
 def train_client_server_models(clients):
     clients_IRs = []
     clients_labels = []
+    clients_request_ids = []
 
     # Collect IR and Labels from the client
     for client in clients:
-        tensor_IR, labels = client.forward(batch_size=32, request_id=1)
+        global global_request_id
+        tensor_IR, labels, request_id = client.forward(batch_size=client_batch_size, request_id=global_request_id)
         clients_IRs.append(tensor_IR)
         clients_labels.append(labels)
-    
+        clients_request_ids.append(request_id)
+        global_request_id += 1
+
     # Concat IR and labels to feed and train server model
     concat_IRs = torch.concatenate(clients_IRs).detach()
     concat_labels = torch.concatenate(clients_labels).detach()
@@ -125,15 +132,15 @@ def train_client_server_models(clients):
 
     # Send IRs gradients back to the clients (train client model)
     clients_IRs_grad = concat_IRs_grad.split(client_batch_size)
-    for client, client_IR_grad in zip(clients, clients_IRs_grad):
-        client.backward(grad=client_IR_grad)
+    for client, client_IR_grad, req_id in zip(clients, clients_IRs_grad, clients_request_ids):
+        client.backward(grad=client_IR_grad, request_id=req_id)
 
 def print_test_accuracy(clients):
     correct = 0
     total = 0
     loss = 0
     for client in clients:
-        tensor_IR, labels = client.test_inference(batch_size=32) #TODO fix batchsize
+        tensor_IR, labels = client.test_inference(batch_size=client_batch_size) #TODO fix batchsize
         c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
         correct += c_correct
         total += c_total
@@ -167,14 +174,14 @@ def aggregate_client_model_params(clients):
 
 
 if __name__ == '__main__':
-    client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
 
-    num_iterations = 1000
+    num_iterations = 400
 
     for i in range(num_iterations):
+        print(i, '/' , num_iterations, '=', i/num_iterations)
         if(i % 20 == 0):
             print_test_accuracy(clients)
         train_client_server_models(clients)

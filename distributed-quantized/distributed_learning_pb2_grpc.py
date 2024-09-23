@@ -59,8 +59,18 @@ class DistributedClientStub(object):
                 request_serializer=distributed__learning__pb2.ModelState.SerializeToString,
                 response_deserializer=distributed__learning__pb2.Empty.FromString,
                 _registered_method=True)
+        self.GenerateQuantizedModel = channel.unary_unary(
+                '/distributed_learning.DistributedClient/GenerateQuantizedModel',
+                request_serializer=distributed__learning__pb2.Empty.SerializeToString,
+                response_deserializer=distributed__learning__pb2.Empty.FromString,
+                _registered_method=True)
         self.TestInference = channel.unary_unary(
                 '/distributed_learning.DistributedClient/TestInference',
+                request_serializer=distributed__learning__pb2.Query.SerializeToString,
+                response_deserializer=distributed__learning__pb2.Tensor.FromString,
+                _registered_method=True)
+        self.TestQuantizedInference = channel.unary_unary(
+                '/distributed_learning.DistributedClient/TestQuantizedInference',
                 request_serializer=distributed__learning__pb2.Query.SerializeToString,
                 response_deserializer=distributed__learning__pb2.Tensor.FromString,
                 _registered_method=True)
@@ -70,7 +80,8 @@ class DistributedClientServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def Forward(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Training model
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -82,7 +93,8 @@ class DistributedClientServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def GetModelState(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Aggregate model
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -93,7 +105,21 @@ class DistributedClientServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GenerateQuantizedModel(self, request, context):
+        """Quantize model
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def TestInference(self, request, context):
+        """Test model precision
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def TestQuantizedInference(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -122,8 +148,18 @@ def add_DistributedClientServicer_to_server(servicer, server):
                     request_deserializer=distributed__learning__pb2.ModelState.FromString,
                     response_serializer=distributed__learning__pb2.Empty.SerializeToString,
             ),
+            'GenerateQuantizedModel': grpc.unary_unary_rpc_method_handler(
+                    servicer.GenerateQuantizedModel,
+                    request_deserializer=distributed__learning__pb2.Empty.FromString,
+                    response_serializer=distributed__learning__pb2.Empty.SerializeToString,
+            ),
             'TestInference': grpc.unary_unary_rpc_method_handler(
                     servicer.TestInference,
+                    request_deserializer=distributed__learning__pb2.Query.FromString,
+                    response_serializer=distributed__learning__pb2.Tensor.SerializeToString,
+            ),
+            'TestQuantizedInference': grpc.unary_unary_rpc_method_handler(
+                    servicer.TestQuantizedInference,
                     request_deserializer=distributed__learning__pb2.Query.FromString,
                     response_serializer=distributed__learning__pb2.Tensor.SerializeToString,
             ),
@@ -247,6 +283,33 @@ class DistributedClient(object):
             _registered_method=True)
 
     @staticmethod
+    def GenerateQuantizedModel(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/distributed_learning.DistributedClient/GenerateQuantizedModel',
+            distributed__learning__pb2.Empty.SerializeToString,
+            distributed__learning__pb2.Empty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def TestInference(request,
             target,
             options=(),
@@ -261,6 +324,33 @@ class DistributedClient(object):
             request,
             target,
             '/distributed_learning.DistributedClient/TestInference',
+            distributed__learning__pb2.Query.SerializeToString,
+            distributed__learning__pb2.Tensor.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def TestQuantizedInference(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/distributed_learning.DistributedClient/TestQuantizedInference',
             distributed__learning__pb2.Query.SerializeToString,
             distributed__learning__pb2.Tensor.FromString,
             options,

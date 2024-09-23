@@ -29,8 +29,8 @@ def get_data_loaders(batch_size, client_id):
     test_dataset = RandomPixelDataset(num_images=1024, img_size=(3, 32, 32))
 
     # Create a data loader
-    train_dataloader = DataLoader(train_dataset, shuffle=False, batch_size=batch_size)
-    test_dataloader = DataLoader(test_dataset, shuffle=False, batch_size=1024) #TODO: arbitrary bath_size
+    train_dataloader = DataLoader(train_dataset, shuffle=False, batch_size=batch_size, drop_last=True)
+    test_dataloader = DataLoader(test_dataset, shuffle=False, batch_size=1024, drop_last=True) #TODO: arbitrary bath_size
 
     return train_dataloader, test_dataloader
 
