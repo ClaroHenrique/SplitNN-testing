@@ -8,7 +8,7 @@ import pickle
 
 from model.mycnn import ServerModel
 from optimizer.adam import create_optimizer
-from utils.utils import debug_print
+from utils.utils import *
 
 import torch
 from torch import nn
@@ -99,12 +99,23 @@ class DistributedClient(object):
 
     def set_model_state(self, model_state): # TODO: implement request_id
         model_state = pickle.dumps(model_state)
-        model_state = pb2.ModelState(model_state=model_state)
+        model_state = pb2.ModelState(state=model_state)
         return self.stub.SetModelState(model_state)
+    
+    def generate_quantized_model(self):
+        query = pb2.Empty()
+        return self.stub.GenerateQuantizedModel(query)
     
     def test_inference(self, batch_size): # TODO: ForwardTest ao inves de test_inference
         query = pb2.Query(batch_size=batch_size, request_id=-1, status=0)
         response = self.stub.TestInference(query)
+        tensor_IR = pickle.loads(response.tensor)
+        labels = pickle.loads(response.label)
+        return tensor_IR, labels
+    
+    def test_quantized_inference(self, batch_size): # TODO: use batchsize
+        query = pb2.Query(batch_size=batch_size, request_id=-1, status=0)
+        response = self.stub.TestQuantizedInference(query)
         tensor_IR = pickle.loads(response.tensor)
         labels = pickle.loads(response.label)
         return tensor_IR, labels
@@ -135,16 +146,21 @@ def train_client_server_models(clients):
     for client, client_IR_grad, req_id in zip(clients, clients_IRs_grad, clients_request_ids):
         client.backward(grad=client_IR_grad, request_id=req_id)
 
-def print_test_accuracy(clients):
+def print_test_accuracy(clients, quantized=False):
     correct = 0
     total = 0
     loss = 0
     for client in clients:
-        tensor_IR, labels = client.test_inference(batch_size=client_batch_size) #TODO fix batchsize
+        if quantized:
+            tensor_IR, labels = client.test_quantized_inference(batch_size=client_batch_size) #TODO fix batchsize
+        else:
+            tensor_IR, labels = client.test_inference(batch_size=client_batch_size) #TODO fix batchsize
+
         c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
         correct += c_correct
         total += c_total
         loss += c_loss.item() / len(clients)
+    quantized and print("== Quantized Accuracy ==") or print("== Accuracy ==")
     print(f"Accuracy: {correct} / {total} = {correct / total}")
     print(f"Loss: ", loss)
     print()
@@ -152,13 +168,13 @@ def print_test_accuracy(clients):
 def aggregate_client_model_params(clients):
     client_model_weights = []
     model_state_keys = None
-
+    # get all models
     for client in clients:
         client_model_state = client.get_model_state()
         client_model_weights.append(list(client_model_state.values()))
         if model_state_keys == None:
             model_state_keys = client_model_state.keys()
-    
+    # aggregate parameters by mean
     aggregated_params = []
     n_layers = len(model_state_keys)
     for l in range(n_layers):
@@ -170,14 +186,19 @@ def aggregate_client_model_params(clients):
     
     # get aggregated weights from server
     new_state_dict = dict(zip(model_state_keys, aggregated_params))
-    return new_state_dict
 
+    # set update every client model
+    for client in clients:
+        client_model_state = client.set_model_state(new_state_dict)
+
+def generate_quantized_models(clients):
+    for client in clients:
+        client.generate_quantized_model()
 
 if __name__ == '__main__':
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
-
     num_iterations = 400
 
     for i in range(num_iterations):
@@ -188,7 +209,9 @@ if __name__ == '__main__':
         aggregate_client_model_params(clients)
         # Estimate test dataset error
 
+    generate_quantized_models(clients)
     print_test_accuracy(clients)
+    print_test_accuracy(clients, quantized=True)
 
 
 

@@ -58,7 +58,7 @@ def generate_quantized_model(model, calib_dataloader):
   calibrate(prepared_model, calib_dataloader)
 
   quantized_model = convert_fx(prepared_model)
-  quantized_model
+  return quantized_model
 
 
 

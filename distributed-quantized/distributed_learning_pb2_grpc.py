@@ -67,12 +67,12 @@ class DistributedClientStub(object):
         self.TestInference = channel.unary_unary(
                 '/distributed_learning.DistributedClient/TestInference',
                 request_serializer=distributed__learning__pb2.Query.SerializeToString,
-                response_deserializer=distributed__learning__pb2.Tensor.FromString,
+                response_deserializer=distributed__learning__pb2.TensorWithMeasures.FromString,
                 _registered_method=True)
         self.TestQuantizedInference = channel.unary_unary(
                 '/distributed_learning.DistributedClient/TestQuantizedInference',
                 request_serializer=distributed__learning__pb2.Query.SerializeToString,
-                response_deserializer=distributed__learning__pb2.Tensor.FromString,
+                response_deserializer=distributed__learning__pb2.TensorWithMeasures.FromString,
                 _registered_method=True)
 
 
@@ -156,12 +156,12 @@ def add_DistributedClientServicer_to_server(servicer, server):
             'TestInference': grpc.unary_unary_rpc_method_handler(
                     servicer.TestInference,
                     request_deserializer=distributed__learning__pb2.Query.FromString,
-                    response_serializer=distributed__learning__pb2.Tensor.SerializeToString,
+                    response_serializer=distributed__learning__pb2.TensorWithMeasures.SerializeToString,
             ),
             'TestQuantizedInference': grpc.unary_unary_rpc_method_handler(
                     servicer.TestQuantizedInference,
                     request_deserializer=distributed__learning__pb2.Query.FromString,
-                    response_serializer=distributed__learning__pb2.Tensor.SerializeToString,
+                    response_serializer=distributed__learning__pb2.TensorWithMeasures.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -325,7 +325,7 @@ class DistributedClient(object):
             target,
             '/distributed_learning.DistributedClient/TestInference',
             distributed__learning__pb2.Query.SerializeToString,
-            distributed__learning__pb2.Tensor.FromString,
+            distributed__learning__pb2.TensorWithMeasures.FromString,
             options,
             channel_credentials,
             insecure,
@@ -352,7 +352,7 @@ class DistributedClient(object):
             target,
             '/distributed_learning.DistributedClient/TestQuantizedInference',
             distributed__learning__pb2.Query.SerializeToString,
-            distributed__learning__pb2.Tensor.FromString,
+            distributed__learning__pb2.TensorWithMeasures.FromString,
             options,
             channel_credentials,
             insecure,

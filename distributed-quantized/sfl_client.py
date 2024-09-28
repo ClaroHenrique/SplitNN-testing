@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import os
 import argparse
+from utils.utils import *
 
 import torch
 from torch import nn
@@ -15,11 +16,13 @@ import grpc
 from concurrent import futures
 import time
 from model.mycnn import ClientModel
+from model.mycnn import generate_quantized_model
 from dataset.cifar10 import get_data_loaders #TODO use test dataset
 from optimizer.adam import create_optimizer
 
 load_dotenv()
 client_model = ClientModel()
+client_quantized_model = None
 
 def save_model():
     # initialize model #
@@ -67,11 +70,11 @@ def process_backward_query(grad):
     optimizer.step()
     optimizer.zero_grad()
 
-def process_test_inference_query(batch_size):
+def process_test_inference_query(model, batch_size):
     outputs = None
     with torch.no_grad():
         inputs, labels = next(iter(test_data_loader))
-        outputs = client_model(inputs)
+        outputs = model(inputs)
     return outputs, labels
 
 class DistributedClientService(pb2_grpc.DistributedClientServicer):
@@ -102,9 +105,16 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
         return pb2.ModelState(state=model_state)
 
     def SetModelState(self, request, context):
-        tensor = request.state
+        model_state = request.state # TODO fix?
         model_state = pickle.loads(model_state)
         client_model.load_state_dict(model_state)
+        print("PARAMETER SUM:", model_parameters_sum(client_model))
+        return pb2.Empty()
+    
+    def GenerateQuantizedModel(self, request, context):
+        global client_quantized_model
+        #TODO: generate decent calib data loader    
+        client_quantized_model = generate_quantized_model(client_model, calib_dataloader=train_data_loader)
         return pb2.Empty()
     
     def TestInference(self, request, context):
@@ -114,7 +124,18 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
 
         print("context:", context)
         print("params:", {"batch_size": batch_size, "request_id": request_id, "status": status})
-        tensor_IR, label = process_test_inference_query(batch_size)
+        tensor_IR, label = process_test_inference_query(client_model, batch_size)
+        tensor_IR, label = pickle.dumps(tensor_IR), pickle.dumps(label)
+        return pb2.Tensor(tensor=tensor_IR, label=label)
+    
+    def TestQuantizedInference(self, request, context):
+        batch_size = request.batch_size
+        request_id = request.request_id
+        status = request.status
+
+        print("context:", context)
+        print("params:", {"batch_size": batch_size, "request_id": request_id, "status": status})
+        tensor_IR, label = process_test_inference_query(client_quantized_model, batch_size)
         tensor_IR, label = pickle.dumps(tensor_IR), pickle.dumps(label)
         return pb2.Tensor(tensor=tensor_IR, label=label)
 
