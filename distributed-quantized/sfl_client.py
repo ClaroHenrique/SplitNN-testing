@@ -71,11 +71,22 @@ def process_backward_query(grad):
     optimizer.zero_grad()
 
 def process_test_inference_query(model, batch_size):
+    time_start = time.time()
+
     outputs = None
     with torch.no_grad():
         inputs, labels = next(iter(test_data_loader))
         outputs = model(inputs)
-    return outputs, labels
+    
+    outputs, labels = pickle.dumps(outputs), pickle.dumps(labels)
+
+    measure = {}
+    measure["time"] = time.time() - time_start
+    measure["bandwidth"] = len(outputs) + len(labels)
+    measure["model-size"] = size_of_model(model)
+    measure = pickle.dumps(measure)
+
+    return outputs, labels, measure
 
 class DistributedClientService(pb2_grpc.DistributedClientServicer):
     def __init__(self, *args, **kwargs):
@@ -124,9 +135,10 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
 
         print("context:", context)
         print("params:", {"batch_size": batch_size, "request_id": request_id, "status": status})
-        tensor_IR, label = process_test_inference_query(client_model, batch_size)
-        tensor_IR, label = pickle.dumps(tensor_IR), pickle.dumps(label)
-        return pb2.Tensor(tensor=tensor_IR, label=label)
+        tensor_IR, label, measure = process_test_inference_query(client_model, batch_size)
+        pb2_tensor = pb2.Tensor(tensor=tensor_IR, label=label)
+        pb2_measure = pb2.Measure(measure=measure)
+        return pb2.TensorWithMeasure(tensor=pb2_tensor, measure=pb2_measure)
     
     def TestQuantizedInference(self, request, context):
         batch_size = request.batch_size
@@ -135,9 +147,10 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
 
         print("context:", context)
         print("params:", {"batch_size": batch_size, "request_id": request_id, "status": status})
-        tensor_IR, label = process_test_inference_query(client_quantized_model, batch_size)
-        tensor_IR, label = pickle.dumps(tensor_IR), pickle.dumps(label)
-        return pb2.Tensor(tensor=tensor_IR, label=label)
+        tensor_IR, label, measure = process_test_inference_query(client_quantized_model, batch_size)
+        pb2_tensor = pb2.Tensor(tensor=tensor_IR, label=label)
+        pb2_measure = pb2.Measure(measure=measure)
+        return pb2.TensorWithMeasure(tensor=pb2_tensor, measure=pb2_measure)
 
 def serve(client_id):
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))

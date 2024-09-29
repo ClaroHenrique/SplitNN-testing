@@ -106,19 +106,20 @@ class DistributedClient(object):
         query = pb2.Empty()
         return self.stub.GenerateQuantizedModel(query)
     
-    def test_inference(self, batch_size): # TODO: ForwardTest ao inves de test_inference
+    def test_inference(self, batch_size, quantized=False): # TODO: ForwardTest ao inves de test_inference
         query = pb2.Query(batch_size=batch_size, request_id=-1, status=0)
-        response = self.stub.TestInference(query)
-        tensor_IR = pickle.loads(response.tensor)
-        labels = pickle.loads(response.label)
-        return tensor_IR, labels
+        if quantized:
+            response = self.stub.TestQuantizedInference(query)
+        else:
+            response = self.stub.TestInference(query)
+
+        tensor_IR = pickle.loads(response.tensor.tensor)
+        labels = pickle.loads(response.tensor.label)
+        measure = pickle.loads(response.measure.measure)
+        return tensor_IR, labels, measure
     
     def test_quantized_inference(self, batch_size): # TODO: use batchsize
-        query = pb2.Query(batch_size=batch_size, request_id=-1, status=0)
-        response = self.stub.TestQuantizedInference(query)
-        tensor_IR = pickle.loads(response.tensor)
-        labels = pickle.loads(response.label)
-        return tensor_IR, labels
+        return self.test_inference(batch_size, quantized=True)
 
 def train_client_server_models(clients):
     clients_IRs = []
@@ -150,19 +151,22 @@ def print_test_accuracy(clients, quantized=False):
     correct = 0
     total = 0
     loss = 0
+    last_measure = None
     for client in clients:
         if quantized:
-            tensor_IR, labels = client.test_quantized_inference(batch_size=client_batch_size) #TODO fix batchsize
+            tensor_IR, labels, measure = client.test_quantized_inference(batch_size=client_batch_size) #TODO fix batchsize
         else:
-            tensor_IR, labels = client.test_inference(batch_size=client_batch_size) #TODO fix batchsize
+            tensor_IR, labels, measure = client.test_inference(batch_size=client_batch_size) #TODO fix batchsize
 
         c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
         correct += c_correct
         total += c_total
         loss += c_loss.item() / len(clients)
-    quantized and print("== Quantized Accuracy ==") or print("== Accuracy ==")
+        last_measure = measure
+    (quantized and print("== Quantized Accuracy =="))    or print("== Accuracy ==")
     print(f"Accuracy: {correct} / {total} = {correct / total}")
     print(f"Loss: ", loss)
+    print(f"Measure: ", last_measure)
     print()
 
 def aggregate_client_model_params(clients):
@@ -199,7 +203,7 @@ if __name__ == '__main__':
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
-    num_iterations = 400
+    num_iterations = 30
 
     for i in range(num_iterations):
         print(i, '/' , num_iterations, '=', i/num_iterations)

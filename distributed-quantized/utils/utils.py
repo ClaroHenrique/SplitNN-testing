@@ -1,4 +1,6 @@
 import os
+import pickle
+import time
 
 def debug_print(*args, **kwargs):
     if os.getenv("DEBUG") == "1":
@@ -9,3 +11,6 @@ def model_parameters_sum(model):
     for param in model.parameters():
         param_sum += param.sum().item()
     return param_sum
+
+def size_of_model(model):
+    return len(pickle.dumps(model.state_dict()))

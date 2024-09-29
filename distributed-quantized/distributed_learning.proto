@@ -15,8 +15,8 @@ service DistributedClient {
   rpc GenerateQuantizedModel(Empty) returns (Empty) {}
 
   // Test model precision
-  rpc TestInference(Query) returns (TensorWithMeasures) {}
-  rpc TestQuantizedInference(Query) returns (TensorWithMeasures) {}
+  rpc TestInference(Query) returns (TensorWithMeasure) {}
+  rpc TestQuantizedInference(Query) returns (TensorWithMeasure) {}
 }
 
 message Query {
@@ -35,13 +35,13 @@ message ModelState {
   bytes state = 1;
 }
 
-message Measures {
-  bytes measures = 1;
+message Measure {
+  bytes measure = 1;
 }
 
-message TensorWithMeasures {
+message TensorWithMeasure {
   Tensor tensor = 1;
-  Measures measures = 2;
+  Measure measure = 2;
 }
 
 message Empty {}
