@@ -15,8 +15,8 @@ import distributed_learning_pb2 as pb2
 import grpc
 from concurrent import futures
 import time
-from model.mycnn import ClientModel
-from model.mycnn import generate_quantized_model
+from model.resnet import ClientModel
+from model.resnet import generate_quantized_model
 from dataset.cifar10 import get_data_loaders #TODO use test dataset
 from optimizer.adam import create_optimizer
 
@@ -35,11 +35,12 @@ def load_model():
     if os.path.exists():
         client_model = torch.load("./model_state/client")
 
+image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
 batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
 learning_rate = float(os.getenv("LEARNING_RATE"))
 print("LR", learning_rate)
 
-train_data_loader, test_data_loader = get_data_loaders(batch_size=batch_size, client_id=1)
+train_data_loader, test_data_loader = get_data_loaders(batch_size=batch_size, client_id=1, image_size = image_size)
 train_iter, test_iter = iter(train_data_loader), iter(test_data_loader)
 
 def get_train_sample():

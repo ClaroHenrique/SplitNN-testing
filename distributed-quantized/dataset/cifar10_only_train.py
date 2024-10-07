@@ -6,9 +6,10 @@ from torch.nn import functional as F
 import torchvision
 import torchvision.transforms as transforms
 
-def get_data_loaders(batch_size, client_id):
+def get_data_loaders(batch_size, client_id, image_size):
     transform = transforms.Compose([
         transforms.ToTensor(),
+        transforms.Resize(image_size),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ]) # 32x32
 

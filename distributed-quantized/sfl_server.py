@@ -6,7 +6,7 @@ import distributed_learning_pb2_grpc as pb2_grpc
 import distributed_learning_pb2 as pb2
 import pickle
 
-from model.mycnn import ServerModel
+from model.resnet import ServerModel
 from optimizer.adam import create_optimizer
 from utils.utils import *
 
@@ -180,12 +180,16 @@ def aggregate_client_model_params(clients):
             model_state_keys = client_model_state.keys()
     # aggregate parameters by mean
     aggregated_params = []
-    n_layers = len(model_state_keys)
-    for l in range(n_layers):
+    for l, layer_key in enumerate(model_state_keys):
         layer_params = []
-        for client_w in client_model_weights:
-            layer_params.append(client_w[l])
-        layer_mean = torch.stack(layer_params, dim=0).mean(dim=0)
+        print(layer_key, 'num_batches_tracked' in layer_key)
+
+        if 'num_batches_tracked' not in layer_key:
+            for client_w in client_model_weights:
+                layer_params.append(client_w[l])
+            layer_mean = torch.stack(layer_params, dim=0).mean(dim=0)
+        else:
+            layer_mean = client_model_weights[0][l].detach()
         aggregated_params.append(layer_mean)
     
     # get aggregated weights from server
@@ -203,7 +207,7 @@ if __name__ == '__main__':
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
-    num_iterations = 30
+    num_iterations = 1
 
     for i in range(num_iterations):
         print(i, '/' , num_iterations, '=', i/num_iterations)
