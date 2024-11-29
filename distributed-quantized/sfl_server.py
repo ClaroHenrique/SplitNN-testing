@@ -163,7 +163,7 @@ def print_test_accuracy(clients, quantized=False):
         total += c_total
         loss += c_loss.item() / len(clients)
         last_measure = measure
-    (quantized and print("== Quantized Accuracy =="))    or print("== Accuracy ==")
+    (quantized and (print("== Quantized Metrics ==") or True)) or print("== Full Precision Metrics ==")
     print(f"Accuracy: {correct} / {total} = {correct / total}")
     print(f"Loss: ", loss)
     print(f"Measure: ", last_measure)
@@ -182,7 +182,7 @@ def aggregate_client_model_params(clients):
     aggregated_params = []
     for l, layer_key in enumerate(model_state_keys):
         layer_params = []
-        print(layer_key, 'num_batches_tracked' in layer_key)
+        debug_print(layer_key, 'num_batches_tracked' in layer_key)
 
         if 'num_batches_tracked' not in layer_key:
             for client_w in client_model_weights:
@@ -207,7 +207,7 @@ if __name__ == '__main__':
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
-    num_iterations = 1
+    num_iterations = 20
 
     for i in range(num_iterations):
         print(i, '/' , num_iterations, '=', i/num_iterations)
