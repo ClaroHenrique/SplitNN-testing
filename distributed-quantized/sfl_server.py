@@ -164,7 +164,7 @@ def print_test_accuracy(clients, quantized=False):
         total += c_total
         loss += c_loss.item() / len(clients)
         last_measure = measure
-    (quantized and print("== Quantized Accuracy =="))    or print("== Accuracy ==")
+    (quantized and (print("== Quantized Metrics ==") or True)) or print("== Full Precision Metrics ==")
     print(f"Accuracy: {correct} / {total} = {correct / total}")
     print(f"Loss: ", loss)
     print(f"Measure: ", last_measure)
@@ -183,6 +183,7 @@ def aggregate_client_model_params(clients):
     aggregated_params = []
     for l, layer_key in enumerate(model_state_keys):
         layer_params = []
+        debug_print(layer_key, 'num_batches_tracked' in layer_key)
 
         if 'num_batches_tracked' not in layer_key:
             for client_w in client_model_weights:
