@@ -20,19 +20,17 @@ server_model = ServerModel()
 loss_fn = nn.CrossEntropyLoss()
 learning_rate = float(os.getenv("LEARNING_RATE"))
 client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
+auto_save_models = int(os.getenv("AUTO_SAVE_MODELS"))
 global_request_id = 1
 optimizer = create_optimizer(server_model.parameters(), learning_rate)
 
-def save_model():
-    # initialize model #
-    client_model.save("./model_state")
-    if os.path.exists():
-        client_model = torch.load("./model_state/client")
+def save_state_dict(state_dict, model_name):
+    torch.save(state_dict, f"./model-state/{model_name}.pth")
 
-def load_model():
-    global client_model
-    if os.path.exists():
-        client_model = torch.load("./model_state/client")
+def load_model_if_exists(model, model_name):
+    path = f"./model-state/{model_name}"
+    if os.path.exists(path):
+        return model.load_state_dict(path)
 
 def server_forward(tensor_IR, labels):
     # update server model, returns grad of the input 
@@ -140,6 +138,9 @@ def train_client_server_models(clients):
     concat_labels = torch.concatenate(clients_labels).detach()
     concat_IRs_grad = server_forward(concat_IRs, concat_labels)
 
+    if auto_save_models:
+        save_state_dict(server_model.state_dict(), "server")
+
     debug_print(concat_IRs.sum())
 
     # Send IRs gradients back to the clients (train client model)
@@ -182,7 +183,6 @@ def aggregate_client_model_params(clients):
     aggregated_params = []
     for l, layer_key in enumerate(model_state_keys):
         layer_params = []
-        print(layer_key, 'num_batches_tracked' in layer_key)
 
         if 'num_batches_tracked' not in layer_key:
             for client_w in client_model_weights:
@@ -194,7 +194,8 @@ def aggregate_client_model_params(clients):
     
     # get aggregated weights from server
     new_state_dict = dict(zip(model_state_keys, aggregated_params))
-
+    if auto_save_models:
+        save_state_dict(server_model.state_dict(), "server")
     # set update every client model
     for client in clients:
         client_model_state = client.set_model_state(new_state_dict)
@@ -207,7 +208,7 @@ if __name__ == '__main__':
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
-    num_iterations = 1
+    num_iterations = 20
 
     for i in range(num_iterations):
         print(i, '/' , num_iterations, '=', i/num_iterations)
