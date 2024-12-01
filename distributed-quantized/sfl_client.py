@@ -21,19 +21,13 @@ from dataset.cifar10 import get_data_loaders #TODO use test dataset
 from optimizer.adam import create_optimizer
 
 load_dotenv()
-client_model = ClientModel()
+auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
+print("auto_load_models", auto_load_models)
+
 client_quantized_model = None
-
-def save_model():
-    # initialize model #
-    client_model.save("./model_state")
-    if os.path.exists():
-        client_model = torch.load("./model_state/client")
-
-def load_model():
-    global client_model
-    if os.path.exists():
-        client_model = torch.load("./model_state/client")
+client_model = ClientModel()
+if auto_load_models:
+    load_model_if_exists(client_model, "client")
 
 image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
 batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))

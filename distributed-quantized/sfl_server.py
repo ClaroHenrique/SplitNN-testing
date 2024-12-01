@@ -15,22 +15,19 @@ from torch import nn
 from torch.nn import functional as F
 
 load_dotenv()
-server_model = ServerModel()
-
 loss_fn = nn.CrossEntropyLoss()
 learning_rate = float(os.getenv("LEARNING_RATE"))
 client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
 auto_save_models = int(os.getenv("AUTO_SAVE_MODELS"))
+auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
 global_request_id = 1
+
+# Load model and optimizer
+server_model = ServerModel()
+if auto_load_models:
+    load_model_if_exists(server_model, "server")
 optimizer = create_optimizer(server_model.parameters(), learning_rate)
 
-def save_state_dict(state_dict, model_name):
-    torch.save(state_dict, f"./model-state/{model_name}.pth")
-
-def load_model_if_exists(model, model_name):
-    path = f"./model-state/{model_name}"
-    if os.path.exists(path):
-        return model.load_state_dict(path)
 
 def server_forward(tensor_IR, labels):
     # update server model, returns grad of the input 
@@ -196,7 +193,7 @@ def aggregate_client_model_params(clients):
     # get aggregated weights from server
     new_state_dict = dict(zip(model_state_keys, aggregated_params))
     if auto_save_models:
-        save_state_dict(server_model.state_dict(), "server")
+        save_state_dict(new_state_dict, "client")
     # set update every client model
     for client in clients:
         client_model_state = client.set_model_state(new_state_dict)
@@ -209,11 +206,11 @@ if __name__ == '__main__':
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
-    num_iterations = 20
+    num_iterations = 200
 
     for i in range(num_iterations):
         print(i, '/' , num_iterations, '=', i/num_iterations)
-        if(i % 20 == 0):
+        if(i % 10 == 0):
             print_test_accuracy(clients)
         train_client_server_models(clients)
         aggregate_client_model_params(clients)
