@@ -24,4 +24,4 @@ def load_model_if_exists(model, model_name):
     print(f"os.path.exists(path): {os.path.exists(path)}")
     if os.path.exists(path):
         print(f"Loading model: {model_name}")
-        model.load_state_dict(torch.load(path))
+        model.load_state_dict(torch.load(path, weights_only=True))
