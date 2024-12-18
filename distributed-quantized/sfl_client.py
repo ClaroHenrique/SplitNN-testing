@@ -25,9 +25,9 @@ auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
 print("auto_load_models", auto_load_models)
 
 client_quantized_model = None
-client_model = ClientModel()
+client_model, model_name = ClientModel()
 if auto_load_models:
-    load_model_if_exists(client_model, "client")
+    load_model_if_exists(client_model, model_name)
 
 image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
 batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
@@ -46,7 +46,7 @@ def get_train_sample():
     return el
 
 loss_fn = nn.CrossEntropyLoss()
-optimizer = create_optimizer(client_model.parameters(), learning_rate)
+optimizer, scheduler = create_optimizer(client_model.parameters(), learning_rate)
 last_output = None
 last_request_id = None
 
@@ -61,9 +61,12 @@ def process_forward_query(batch_size, request_id): #TODO use batch_size
     return outputs, labels
 
 def process_backward_query(grad):
+    optimizer.zero_grad()
     last_output.backward(grad)
     optimizer.step()
-    optimizer.zero_grad()
+    #scheduler.step()
+    debug_print(scheduler.get_last_lr())
+
 
 def process_test_inference_query(model, batch_size):
     time_start = time.time()

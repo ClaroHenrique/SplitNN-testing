@@ -3,4 +3,5 @@ data/
 *__pycache__*
 distributed-quantized/.venv/
 distributed-quantized/distributed-quantized/
-distributed-quantized/model-state/
+distributed-quantized/model-state/*
+!distributed-quantized/model-state/.gitkeep

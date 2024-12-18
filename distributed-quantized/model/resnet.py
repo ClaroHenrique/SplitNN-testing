@@ -260,20 +260,27 @@ def _resnet(arch, block, layers, pretrained, progress, is_client, split_point):
 
 
 def resnet18(is_client, split_point=0):
-    return _resnet('resnet18', BasicBlock, [2, 2, 2, 2], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
+    model = _resnet('resnet18', BasicBlock, [2, 2, 2, 2], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
+    model_name = 'resnet18_' + str(split_point)
+    return model, model_name
 
 def resnet34(is_client, split_point=0):
-    return _resnet('resnet34', BasicBlock, [3, 4, 6, 3], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
+    model = _resnet('resnet34', BasicBlock, [3, 4, 6, 3], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
+    model_name = 'resnet34_' + str(split_point)
+    return model, model_name
 
 def resnet50(is_client, split_point=0):
-    return _resnet('resnet50', Bottleneck, [3, 4, 6, 3], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
-
+    model = _resnet('resnet50', Bottleneck, [3, 4, 6, 3], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
+    model_name = 'resnet50_' + str(split_point)
+    return model, model_name
 
 def ClientModel(split_point=1):
-    return resnet18(is_client=True, split_point=split_point)
+    model, model_name = resnet18(is_client=True, split_point=split_point)
+    return model, model_name + "_client"
 
 def ServerModel(split_point=1):
-    return resnet18(is_client=False, split_point=split_point)
+    model, model_name = resnet18(is_client=False, split_point=split_point)
+    return model, model_name + "_server"
 
 
 
@@ -302,13 +309,6 @@ def generate_quantized_model(model, calib_dataloader):
 
     quantized_model = convert_fx(prepared_model)
   return quantized_model
-
-
-
-
-
-
-
 
 
 

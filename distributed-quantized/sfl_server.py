@@ -7,6 +7,7 @@ import distributed_learning_pb2 as pb2
 import pickle
 
 from model.resnet import ServerModel
+from model.resnet import ClientModel
 from optimizer.adam import create_optimizer
 from utils.utils import *
 
@@ -23,10 +24,11 @@ auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
 global_request_id = 1
 
 # Load model and optimizer
-server_model = ServerModel()
+server_model, model_name = ServerModel()
+_, client_model_name = ClientModel()
 if auto_load_models:
-    load_model_if_exists(server_model, "server")
-optimizer = create_optimizer(server_model.parameters(), learning_rate)
+    load_model_if_exists(server_model, model_name)
+optimizer, scheduler = create_optimizer(server_model.parameters(), learning_rate)
 
 
 def server_forward(tensor_IR, labels):
@@ -38,8 +40,10 @@ def server_forward(tensor_IR, labels):
     loss = loss_fn(outputs, labels)
     loss.backward()
     optimizer.step()
+    scheduler.step()
     debug_print("updating server model")
     debug_print(torch.unique(labels, return_counts=True))
+    print("LR", scheduler.get_last_lr())
     return tensor_IR.grad.detach()
 
 def server_test_inference(tensor_IR, labels):
@@ -136,7 +140,7 @@ def train_client_server_models(clients):
     concat_IRs_grad = server_forward(concat_IRs, concat_labels)
 
     if auto_save_models:
-        save_state_dict(server_model.state_dict(), "server")
+        save_state_dict(server_model.state_dict(), model_name)
 
     debug_print(concat_IRs.sum())
 
@@ -193,7 +197,7 @@ def aggregate_client_model_params(clients):
     # get aggregated weights from server
     new_state_dict = dict(zip(model_state_keys, aggregated_params))
     if auto_save_models:
-        save_state_dict(new_state_dict, "client")
+        save_state_dict(new_state_dict, client_model_name)
     # set update every client model
     for client in clients:
         client_model_state = client.set_model_state(new_state_dict)
@@ -206,8 +210,9 @@ if __name__ == '__main__':
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
-    num_iterations = 200
 
+
+    num_iterations = 200
     for i in range(num_iterations):
         print(i, '/' , num_iterations, '=', i/num_iterations)
         if(i % 10 == 0):
