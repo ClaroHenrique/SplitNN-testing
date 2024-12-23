@@ -44,6 +44,14 @@ def get_train_sample():
         train_iter = iter(train_data_loader)
         el = next(train_iter, None)
     return el
+def get_test_sample():
+    global train_iter
+    el = next(train_iter, None)
+    if el == None:
+        train_iter = iter(train_data_loader)
+        el = next(train_iter, None)
+    return el
+
 
 loss_fn = nn.CrossEntropyLoss()
 optimizer, scheduler = create_optimizer(client_model.parameters(), learning_rate)
@@ -73,7 +81,7 @@ def process_test_inference_query(model, batch_size):
 
     outputs = None
     with torch.no_grad():
-        inputs, labels = next(iter(test_data_loader))
+        inputs, labels = get_test_sample()
         outputs = model(inputs)
     
     outputs, labels = pickle.dumps(outputs), pickle.dumps(labels)
@@ -130,7 +138,6 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
         batch_size = request.batch_size
         request_id = request.request_id
         status = request.status
-
         print("context:", context)
         print("params:", {"batch_size": batch_size, "request_id": request_id, "status": status})
         tensor_IR, label, measure = process_test_inference_query(client_model, batch_size)

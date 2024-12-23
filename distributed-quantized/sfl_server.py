@@ -40,10 +40,10 @@ def server_forward(tensor_IR, labels):
     loss = loss_fn(outputs, labels)
     loss.backward()
     optimizer.step()
-    scheduler.step()
+    #scheduler.step()
     debug_print("updating server model")
     debug_print(torch.unique(labels, return_counts=True))
-    print("LR", scheduler.get_last_lr())
+    debug_print("LR", scheduler.get_last_lr())
     return tensor_IR.grad.detach()
 
 def server_test_inference(tensor_IR, labels):
@@ -61,6 +61,12 @@ def server_test_inference(tensor_IR, labels):
         pred_class = torch.argmax(outputs, dim=1)
         correct += torch.eq(labels, pred_class).sum().item()
         total += len(labels)
+        debug_print('tensor_IR.size()', tensor_IR.size())
+        debug_print('outputs.size()', outputs.size())
+        debug_print('pred_class.size()', outputs.size())
+        debug_print('outputs', outputs)
+        debug_print('labels', labels)
+        debug_print('pred_class', pred_class)
     return correct, total, loss
 
 class DistributedClient(object):
@@ -149,27 +155,36 @@ def train_client_server_models(clients):
     for client, client_IR_grad, req_id in zip(clients, clients_IRs_grad, clients_request_ids):
         client.backward(grad=client_IR_grad, request_id=req_id)
 
-def print_test_accuracy(clients, quantized=False):
+def print_test_accuracy(clients, num_instances, quantized=False):
     correct = 0
     total = 0
     loss = 0
-    last_measure = None
-    for client in clients:
-        if quantized:
-            tensor_IR, labels, measure = client.test_quantized_inference(batch_size=client_batch_size) #TODO fix batchsize
-        else:
-            tensor_IR, labels, measure = client.test_inference(batch_size=client_batch_size) #TODO fix batchsize
+    all_measures = []
 
-        c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
-        correct += c_correct
-        total += c_total
-        loss += c_loss.item() / len(clients)
-        last_measure = measure
+    while True:
+        for client in clients:
+            if quantized:
+                tensor_IR, labels, measure = client.test_quantized_inference(batch_size=client_batch_size) #TODO fix batchsize
+            else:
+                tensor_IR, labels, measure = client.test_inference(batch_size=client_batch_size) #TODO fix batchsize
+
+            c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
+            correct += c_correct
+            total += c_total
+            loss += c_loss.item() / len(clients)
+            all_measures.append(measure)
+            #print(f"Accuracy progress {correct} / {total} = {correct / total}")
+            break
+        if total >= num_instances:
+            break
+        
+        
     (quantized and (print("== Quantized Metrics ==") or True)) or print("== Full Precision Metrics ==")
     print(f"Accuracy: {correct} / {total} = {correct / total}")
     print(f"Loss: ", loss)
-    print(f"Measure: ", last_measure)
+    print(f"Measure mean: ", aggregate_measures_mean(all_measures))
     print()
+    
 
 def aggregate_client_model_params(clients):
     client_model_weights = []
@@ -211,20 +226,45 @@ if __name__ == '__main__':
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
 
-
-    num_iterations = 200
-    for i in range(num_iterations):
-        print(i, '/' , num_iterations, '=', i/num_iterations)
-        if(i % 10 == 0):
-            print_test_accuracy(clients)
-        train_client_server_models(clients)
-        aggregate_client_model_params(clients)
-        # Estimate test dataset error
-
-    generate_quantized_models(clients)
-    print_test_accuracy(clients)
-    print_test_accuracy(clients, quantized=True)
-
+    op = ""
+    generated_quantized = False
+    while True:
+        print("======== MENU ========")
+        print("[1] - Run 100 train interations")
+        print("[2] - Quantize client model" + ((generated_quantized and ".") or (" (pendent)")))
+        print("[3] - Show partial test dataset accuracy")
+        print("[4] - Show full test dataset accuracy ")
+        print("[0] - Sair")
+        op = input()
+        if op == '1':
+            num_iterations = 100
+            for i in range(num_iterations):
+                print(i, '/' , num_iterations, '=', i/num_iterations)
+                train_client_server_models(clients)
+                aggregate_client_model_params(clients)
+                # Estimate test dataset error
+                generate_quantized_models(clients)
+                print_test_accuracy(clients, num_instances=client_batch_size)
+                print_test_accuracy(clients, num_instances=client_batch_size, quantized=True)
+        elif op == '2':
+            generate_quantized_models(clients)
+            generated_quantized = True
+        elif op == '3':
+            if generated_quantized:
+                print_test_accuracy(clients, num_instances=client_batch_size)
+                print_test_accuracy(clients, num_instances=client_batch_size, quantized=True)
+            else:
+                print("Must quantize client model")
+        elif op == '4':
+            if generated_quantized:
+                print_test_accuracy(clients, num_instances=10000)
+                print_test_accuracy(clients, num_instances=10000, quantized=True) #TODO: adjust num_clients per dataset
+            else:
+                print("Must quantize client model")
+        elif op == '0':
+            break
+        else:
+            print("Invalid option")
 
 
 # # send client_model weights to the server for aggregation

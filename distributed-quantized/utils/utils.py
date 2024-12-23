@@ -24,4 +24,15 @@ def load_model_if_exists(model, model_name):
     print(f"os.path.exists(path): {os.path.exists(path)}")
     if os.path.exists(path):
         print(f"Loading model: {model_name}")
-        model.load_state_dict(torch.load(path, weights_only=True))
+        model.load_state_dict(torch.load(path, weights_only=True, map_location=torch.device('cpu')))
+
+def aggregate_measures_mean(measures):
+    keys = list(measures[0].keys())
+    n = len(measures)
+    res = {}
+    for k in keys:
+        sum = 0
+        for measure in measures:
+            sum += measure[k]
+        res[k] = sum / n
+    return res
