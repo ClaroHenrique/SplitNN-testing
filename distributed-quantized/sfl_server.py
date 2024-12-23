@@ -121,6 +121,8 @@ class DistributedClient(object):
         tensor_IR = pickle.loads(response.tensor.tensor)
         labels = pickle.loads(response.tensor.label)
         measure = pickle.loads(response.measure.measure)
+        if quantized:
+            tensor_IR = tensor_IR.dequantize()
         return tensor_IR, labels, measure
     
     def test_quantized_inference(self, batch_size): # TODO: use batchsize

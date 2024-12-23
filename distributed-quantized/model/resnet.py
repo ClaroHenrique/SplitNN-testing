@@ -305,12 +305,13 @@ def calibrate(model, dataloader):
 def generate_quantized_model(model, calib_dataloader):
   # Quantization config
   qconfig = get_default_qconfig('x86')
-  qconfig_mapping = QConfigMapping().set_global(qconfig)
+  qconfig_mapping = QConfigMapping().set_global(qconfig) # fully quantize
+  prepare_custom_config_dict = {'output_quantized_idxs': [0]} # set quantized output
   model.eval()
   with torch.no_grad():
     # Quantize model
     example_inputs = (next(iter(calib_dataloader)))
-    prepared_model = prepare_fx(model, qconfig_mapping, example_inputs)
+    prepared_model = prepare_fx(model, qconfig_mapping, example_inputs, prepare_custom_config_dict)
     calibrate(prepared_model, calib_dataloader)
 
     quantized_model = convert_fx(prepared_model)
