@@ -249,9 +249,9 @@ class ResNet(nn.Module):
 
 def _resnet(arch, block, layers, pretrained, progress, is_client, split_point):
     if is_client:
-        model = ResNet(block, layers, split_point, is_client=True)
+        model = ResNet(block, layers, split_point, is_client=True, num_classes=10) 
     else:
-        model = ResNet(block, layers, split_point, is_client=False)
+        model = ResNet(block, layers, split_point, is_client=False, num_classes=10)
     # if pretrained:
     #     state_dict = load_state_dict_from_url(model_urls[arch],
     #                                           progress=progress)
