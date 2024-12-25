@@ -44,12 +44,13 @@ def get_train_sample():
         train_iter = iter(train_data_loader)
         el = next(train_iter, None)
     return el
+
 def get_test_sample():
-    global train_iter
-    el = next(train_iter, None)
+    global test_iter
+    el = next(test_iter, None)
     if el == None:
-        train_iter = iter(train_data_loader)
-        el = next(train_iter, None)
+        test_iter = iter(test_data_loader)
+        el = next(test_iter, None)
     return el
 
 

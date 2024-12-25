@@ -251,6 +251,8 @@ if __name__ == '__main__':
         elif op == '2':
             generate_quantized_models(clients)
             generated_quantized = True
+        elif op == '22':
+            generated_quantized = True
         elif op == '3':
             if generated_quantized:
                 print_test_accuracy(clients, num_instances=client_batch_size)
