@@ -176,8 +176,7 @@ async def train_client_server_models(clients):
             asyncio.create_task(
                 call_client_backward_async(client, client_IR_grad, request_id=req_id))
         )
-    for task in backward_tasks:
-        response = await task
+    await asyncio.gather(*backward_tasks)
 
 
 def print_test_accuracy(clients, num_instances, quantized=False):
