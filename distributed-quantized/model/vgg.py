@@ -128,3 +128,5 @@ def ServerModel(split_point=1, num_classes=10):
     model_name, model = vgg19_bn(is_client=False, split_point=split_point, num_classes=num_classes)
     return model, model_name + "_server"
 
+
+

@@ -7,8 +7,8 @@ import distributed_learning_pb2_grpc as pb2_grpc
 import distributed_learning_pb2 as pb2
 import pickle
 
-from model.resnet import ServerModel
-from model.resnet import ClientModel
+from model.vgg import ServerModel
+from model.vgg import ClientModel
 from optimizer.adam import create_optimizer
 from utils.utils import *
 

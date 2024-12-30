@@ -1,9 +1,9 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+# For testing
 
-# Define the client model
-class ClientModel(nn.Module):
+class MyCNN_Client(nn.Module):
   def __init__(self):
     super().__init__()
     super().__init__()
@@ -17,7 +17,7 @@ class ClientModel(nn.Module):
     x = torch.flatten(x, 1) # flatten all dimensions except batch
     return x
 
-class ServerModel(nn.Module):
+class MyCNN_Server(nn.Module):
   def __init__(self):
     super().__init__()
     self.fc1 = nn.Linear(400, 120)
@@ -29,37 +29,9 @@ class ServerModel(nn.Module):
     x = F.relu(self.fc2(x))
     x = self.fc3(x)
     return x
-  
 
-client_model = ClientModel()
-server_model = ServerModel()
+def ClientModel(split_point=None):
+    return MyCNN_Client(), "mycnn_client"
 
-############  QUANTIZATE MODEL ############
-from torch.ao.quantization import get_default_qconfig
-from torch.ao.quantization.quantize_fx import prepare_fx, convert_fx
-from torch.ao.quantization import QConfigMapping
-
-def calibrate(model, dataloader):
-  model.eval()
-  with torch.no_grad():
-    for i, (x_batch, y_batch) in enumerate(dataloader):
-      model(x_batch)
-      if i >= 100: #TODO: limit accessed data
-        break
-
-def generate_quantized_model(model, calib_dataloader):
-  # Quantization config
-  qconfig = get_default_qconfig('x86')
-  qconfig_mapping = QConfigMapping().set_global(qconfig)
-
-  # Quantize model
-  example_inputs = (next(iter(calib_dataloader)))
-  prepared_model = prepare_fx(model, qconfig_mapping, example_inputs)
-  calibrate(prepared_model, calib_dataloader)
-
-  quantized_model = convert_fx(prepared_model)
-  return quantized_model
-
-
-
-
+def ServerModel(split_point=None):
+    return MyCNN_Server(), "mycnn_server"

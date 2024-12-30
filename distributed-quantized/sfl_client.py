@@ -15,8 +15,8 @@ import distributed_learning_pb2 as pb2
 import grpc
 from concurrent import futures
 import time
-from model.resnet import ClientModel
-from model.resnet import generate_quantized_model
+from model.vgg import ClientModel
+from model.quantization import generate_quantized_model
 from dataset.cifar10 import get_data_loaders #TODO use test dataset
 from optimizer.adam import create_optimizer
 
