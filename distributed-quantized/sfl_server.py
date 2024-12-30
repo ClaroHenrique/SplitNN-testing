@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+import asyncio
 
 import grpc
 import distributed_learning_pb2_grpc as pb2_grpc
@@ -128,19 +129,31 @@ class DistributedClient(object):
     def test_quantized_inference(self, batch_size): # TODO: use batchsize
         return self.test_inference(batch_size, quantized=True)
 
-def train_client_server_models(clients):
+async def train_client_server_models(clients):
+    forward_tasks = []
     clients_IRs = []
     clients_labels = []
     clients_request_ids = []
+    num_clients = len(clients)
+
+    async def call_client_forward_async(client, batch_size, request_id):
+        return client.forward(batch_size=batch_size, request_id=request_id)
 
     # Collect IR and Labels from the client
     for client in clients:
         global global_request_id
-        tensor_IR, labels, request_id = client.forward(batch_size=client_batch_size, request_id=global_request_id)
+        #tensor_IR, labels, request_id = client.forward(batch_size=client_batch_size, request_id=global_request_id)
+        forward_tasks.append(
+            asyncio.create_task(
+                call_client_forward_async(client, client_batch_size, global_request_id))
+        )
+        global_request_id += 1
+    
+    for task in forward_tasks:
+        tensor_IR, labels, request_id = await task
         clients_IRs.append(tensor_IR)
         clients_labels.append(labels)
         clients_request_ids.append(request_id)
-        global_request_id += 1
 
     # Concat IR and labels to feed and train server model
     concat_IRs = torch.concatenate(clients_IRs).detach()
@@ -148,14 +161,24 @@ def train_client_server_models(clients):
     concat_IRs_grad = server_forward(concat_IRs, concat_labels)
 
     if auto_save_models:
-        save_state_dict(server_model.state_dict(), model_name)
+        save_state_dict(server_model.state_dict(), "server")
 
     debug_print(concat_IRs.sum())
 
     # Send IRs gradients back to the clients (train client model)
+    async def call_client_backward_async(client, grad, request_id):
+        return client.backward(grad=grad, request_id=req_id)
+
+    backward_tasks = []
     clients_IRs_grad = concat_IRs_grad.split(client_batch_size)
     for client, client_IR_grad, req_id in zip(clients, clients_IRs_grad, clients_request_ids):
-        client.backward(grad=client_IR_grad, request_id=req_id)
+        backward_tasks.append(
+            asyncio.create_task(
+                call_client_backward_async(client, client_IR_grad, request_id=req_id))
+        )
+    for task in backward_tasks:
+        response = await task
+
 
 def print_test_accuracy(clients, num_instances, quantized=False):
     correct = 0
@@ -242,7 +265,7 @@ if __name__ == '__main__':
             num_iterations = 100
             for i in range(num_iterations):
                 print(i, '/' , num_iterations, '=', i/num_iterations)
-                train_client_server_models(clients)
+                asyncio.run(train_client_server_models(clients))
                 aggregate_client_model_params(clients)
                 # Estimate test dataset error
                 generate_quantized_models(clients)
