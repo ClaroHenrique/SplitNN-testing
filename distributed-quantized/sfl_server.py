@@ -7,8 +7,11 @@ import distributed_learning_pb2_grpc as pb2_grpc
 import distributed_learning_pb2 as pb2
 import pickle
 
-from model.vgg import ServerModel
-from model.vgg import ClientModel
+##### CUSTOMIZE MODEL AND DATA #####
+from model.resnet import ClientModel
+from model.resnet import ServerModel
+from dataset.cifar10_non_iid import get_dataset_name
+####################################
 from optimizer.adam import create_optimizer
 from utils.utils import *
 
@@ -22,13 +25,15 @@ learning_rate = float(os.getenv("LEARNING_RATE"))
 client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
 auto_save_models = int(os.getenv("AUTO_SAVE_MODELS"))
 auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
+dataset_name = get_dataset_name()
 global_request_id = 1
+
 
 # Load model and optimizer
 server_model, model_name = ServerModel()
 _, client_model_name = ClientModel()
 if auto_load_models:
-    load_model_if_exists(server_model, model_name)
+    load_model_if_exists(server_model, model_name, dataset_name)
 optimizer, scheduler = create_optimizer(server_model.parameters(), learning_rate)
 
 
@@ -161,7 +166,7 @@ async def train_client_server_models(clients):
     concat_IRs_grad = server_forward(concat_IRs, concat_labels)
 
     if auto_save_models:
-        save_state_dict(server_model.state_dict(), "server")
+        save_state_dict(server_model.state_dict(), "server", dataset_name)
 
     debug_print(concat_IRs.sum())
 
@@ -236,7 +241,7 @@ def aggregate_client_model_params(clients):
     # get aggregated weights from server
     new_state_dict = dict(zip(model_state_keys, aggregated_params))
     if auto_save_models:
-        save_state_dict(new_state_dict, client_model_name)
+        save_state_dict(new_state_dict, client_model_name, dataset_name)
     # set update every client model
     for client in clients:
         client_model_state = client.set_model_state(new_state_dict)

@@ -16,14 +16,14 @@ def model_parameters_sum(model):
 def size_of_model(model):
     return len(pickle.dumps(model.state_dict()))
 
-def save_state_dict(state_dict, model_name):
-    torch.save(state_dict, f"./model-state/{model_name}.pth")
+def save_state_dict(state_dict, model_name, dataset_name):
+    torch.save(state_dict, f"./model-state/{model_name}_{dataset_name}.pth")
 
-def load_model_if_exists(model, model_name):
-    path = f"./model-state/{model_name}.pth"
+def load_model_if_exists(model, model_name, dataset_name):
+    path = f"./model-state/{model_name}_{dataset_name}.pth"
     print(f"os.path.exists(path): {os.path.exists(path)}")
     if os.path.exists(path):
-        print(f"Loading model: {model_name}")
+        print(f"Loading model: {model_name}_{dataset_name}")
         model.load_state_dict(torch.load(path, weights_only=True, map_location=torch.device('cpu')))
 
 def aggregate_measures_mean(measures):

@@ -15,26 +15,35 @@ import distributed_learning_pb2 as pb2
 import grpc
 from concurrent import futures
 import time
-from model.vgg import ClientModel
+##### CUSTOMIZE MODEL AND DATA #####
+from model.resnet import ClientModel
+from dataset.cifar10_non_iid import get_data_loaders #TODO use test dataset ??
+from dataset.cifar10_non_iid import get_dataset_name
+####################################
 from model.quantization import generate_quantized_model
-from dataset.cifar10 import get_data_loaders #TODO use test dataset
 from optimizer.adam import create_optimizer
+
+parser = argparse.ArgumentParser(description="Cliente SFL")
+parser.add_argument("--client_id", required=True, type=str, help="ID que identifica unicamente o cliente")
+args = parser.parse_args()
+client_id = int(args.client_id)
 
 load_dotenv()
 auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
+dataset_name = get_dataset_name()
 print("auto_load_models", auto_load_models)
 
 client_quantized_model = None
 client_model, model_name = ClientModel()
 if auto_load_models:
-    load_model_if_exists(client_model, model_name)
+    load_model_if_exists(client_model, model_name, dataset_name)
 
 image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
 batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
 learning_rate = float(os.getenv("LEARNING_RATE"))
 print("LR", learning_rate)
 
-train_data_loader, test_data_loader = get_data_loaders(batch_size=batch_size, client_id=1, image_size = image_size)
+train_data_loader, test_data_loader = get_data_loaders(batch_size=batch_size, client_id=client_id, image_size = image_size)
 train_iter, test_iter = iter(train_data_loader), iter(test_data_loader)
 
 def get_train_sample():
@@ -77,17 +86,18 @@ def process_backward_query(grad):
     debug_print(scheduler.get_last_lr())
 
 
-def process_test_inference_query(model, batch_size):
+def process_test_inference_query(model, batch_size, msg):
+    print("process_test_inference_query -", msg)
     time_start = time.time()
-
+    measure = {}
     outputs = None
     with torch.no_grad():
         inputs, labels = get_test_sample()
         outputs = model(inputs)
+    measure["time-to-output"] = time.time() - time_start
     
     outputs, labels = pickle.dumps(outputs), pickle.dumps(labels)
 
-    measure = {}
     measure["time"] = time.time() - time_start
     measure["bandwidth"] = len(outputs) + len(labels)
     measure["model-size"] = size_of_model(model)
@@ -141,7 +151,7 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
         status = request.status
         print("context:", context)
         print("params:", {"batch_size": batch_size, "request_id": request_id, "status": status})
-        tensor_IR, label, measure = process_test_inference_query(client_model, batch_size)
+        tensor_IR, label, measure = process_test_inference_query(client_model, batch_size, "fully")
         pb2_tensor = pb2.Tensor(tensor=tensor_IR, label=label)
         pb2_measure = pb2.Measure(measure=measure)
         return pb2.TensorWithMeasure(tensor=pb2_tensor, measure=pb2_measure)
@@ -153,7 +163,7 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
 
         print("context:", context)
         print("params:", {"batch_size": batch_size, "request_id": request_id, "status": status})
-        tensor_IR, label, measure = process_test_inference_query(client_quantized_model, batch_size)
+        tensor_IR, label, measure = process_test_inference_query(client_quantized_model, batch_size, "quantized")
         pb2_tensor = pb2.Tensor(tensor=tensor_IR, label=label)
         pb2_measure = pb2.Measure(measure=measure)
         return pb2.TensorWithMeasure(tensor=pb2_tensor, measure=pb2_measure)
@@ -177,9 +187,6 @@ def serve(client_id):
     server.wait_for_termination()
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Cliente SFL")
-    parser.add_argument("--client_id", required=True, type=str, help="ID que identifica unicamente o cliente")
-    args = parser.parse_args()
-
-    client_id = int(args.client_id)
-    serve(client_id)
+    
+    get_train_sample()
+    # serve(client_id)

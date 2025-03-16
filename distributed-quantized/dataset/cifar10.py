@@ -6,6 +6,9 @@ from torch.nn import functional as F
 import torchvision
 import torchvision.transforms as transforms
 
+def get_dataset_name():
+    return "cifar10"
+
 def get_data_loaders(batch_size, client_id, image_size):
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
