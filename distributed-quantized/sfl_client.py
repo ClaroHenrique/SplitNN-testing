@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import argparse
 from utils.utils import *
+import itertools
 
 import torch
 from torch import nn
@@ -44,23 +45,14 @@ learning_rate = float(os.getenv("LEARNING_RATE"))
 print("LR", learning_rate)
 
 train_data_loader, test_data_loader = get_data_loaders(batch_size=batch_size, client_id=client_id, image_size = image_size)
-train_iter, test_iter = iter(train_data_loader), iter(test_data_loader)
+train_iter = itertools.cycle(train_data_loader)
+test_iter = itertools.cycle(test_data_loader)
 
 def get_train_sample():
-    global train_iter
-    el = next(train_iter, None)
-    if el == None:
-        train_iter = iter(train_data_loader)
-        el = next(train_iter, None)
-    return el
+    el = next(train_iter)
 
 def get_test_sample():
-    global test_iter
-    el = next(test_iter, None)
-    if el == None:
-        test_iter = iter(test_data_loader)
-        el = next(test_iter, None)
-    return el
+    el = next(test_iter)
 
 
 loss_fn = nn.CrossEntropyLoss()
@@ -187,6 +179,4 @@ def serve(client_id):
     server.wait_for_termination()
 
 if __name__ == '__main__':
-    
-    get_train_sample()
-    # serve(client_id)
+    serve(client_id)
