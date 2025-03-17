@@ -49,10 +49,10 @@ train_iter = itertools.cycle(train_data_loader)
 test_iter = itertools.cycle(test_data_loader)
 
 def get_train_sample():
-    el = next(train_iter)
+    return next(train_iter)
 
 def get_test_sample():
-    el = next(test_iter)
+    return next(test_iter)
 
 
 loss_fn = nn.CrossEntropyLoss()
