@@ -150,7 +150,8 @@ async def train_client_server_models(clients):
         #tensor_IR, labels, request_id = client.forward(batch_size=client_batch_size, request_id=global_request_id)
         forward_tasks.append(
             asyncio.create_task(
-                call_client_forward_async(client, client_batch_size, global_request_id))
+                call_client_forward_async(client, client_batch_size, global_request_id)
+            )
         )
         global_request_id += 1
     
@@ -213,17 +214,19 @@ def print_test_accuracy(clients, num_instances, quantized=False):
     print(f"Loss: ", loss)
     print(f"Measure mean: ", aggregate_measures_mean(all_measures))
     print()
-    
 
-def aggregate_client_model_params(clients):
-    client_model_weights = []
-    model_state_keys = None
-    # get all models
-    for client in clients:
-        client_model_state = client.get_model_state()
-        client_model_weights.append(list(client_model_state.values()))
-        if model_state_keys == None:
-            model_state_keys = client_model_state.keys()
+async def aggregate_client_model_params(clients):
+    num_clients = len(clients)
+
+    async def call_client_get_model_async(client):
+        return client.get_model_state()
+
+    get_model_tasks = [asyncio.create_task(call_client_get_model_async(client)) for client in clients]
+    client_model_states = await asyncio.gather(*get_model_tasks)
+
+    model_state_keys = client_model_states[0].keys()
+    client_model_weights = [list(model_state.values()) for model_state in client_model_states]
+
     # aggregate parameters by mean
     aggregated_params = []
     for l, layer_key in enumerate(model_state_keys):
@@ -242,9 +245,13 @@ def aggregate_client_model_params(clients):
     new_state_dict = dict(zip(model_state_keys, aggregated_params))
     if auto_save_models:
         save_state_dict(new_state_dict, client_model_name, dataset_name)
+
+    async def call_client_set_model_async(client, new_state_dict):
+        return client.set_model_state(new_state_dict)
+
     # set update every client model
-    for client in clients:
-        client_model_state = client.set_model_state(new_state_dict)
+    set_model_tasks = [asyncio.create_task(call_client_set_model_async(client, new_state_dict)) for client in clients]
+    await asyncio.gather(*set_model_tasks)
 
 def generate_quantized_models(clients):
     for client in clients:
@@ -269,8 +276,10 @@ if __name__ == '__main__':
             num_iterations = 100
             for i in range(num_iterations):
                 print(i, '/' , num_iterations, '=', i/num_iterations)
+                # Training models
                 asyncio.run(train_client_server_models(clients))
-                aggregate_client_model_params(clients)
+                # Aggregating client model parameters
+                asyncio.run(aggregate_client_model_params(clients))
                 # Estimate test dataset error
                 generate_quantized_models(clients)
                 print_test_accuracy(clients, num_instances=client_batch_size)
