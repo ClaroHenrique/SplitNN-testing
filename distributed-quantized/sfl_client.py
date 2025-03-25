@@ -163,6 +163,7 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
 def serve(client_id):
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_address = os.getenv(f"CLIENT_ADDRESSES").split(",")[client_id]
+    client_port = client_address.split(":")[1]
     print("Client address", client_address)
 
     options=[
@@ -172,7 +173,7 @@ def serve(client_id):
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=options)
     pb2_grpc.add_DistributedClientServicer_to_server(DistributedClientService(), server)
-    server.add_insecure_port(client_address)
+    server.add_insecure_port(f"[::]:{client_port}")
     server.start()
 
     print("SFL Client started: waiting for queries")
