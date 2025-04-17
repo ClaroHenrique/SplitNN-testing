@@ -1,7 +1,10 @@
 from dotenv import load_dotenv
-import os
 import asyncio
+import os
+import sys
 
+
+sys.path.append(os.path.abspath("proto"))
 import grpc
 import distributed_learning_pb2_grpc as pb2_grpc
 import distributed_learning_pb2 as pb2

@@ -3,6 +3,12 @@ import os
 import argparse
 from utils.utils import *
 import itertools
+import os
+import sys
+
+sys.path.append(os.path.abspath("proto"))
+import distributed_learning_pb2_grpc as pb2_grpc
+import distributed_learning_pb2 as pb2
 
 import torch
 from torch import nn
@@ -10,8 +16,6 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor
 import pickle
 
-import distributed_learning_pb2_grpc as pb2_grpc
-import distributed_learning_pb2 as pb2
 
 import grpc
 from concurrent import futures

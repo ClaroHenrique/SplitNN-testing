@@ -6,7 +6,7 @@ python -m pip install --upgrade pip
 pip3 install dontenv
 pip3 install torch
 pip3 install torchvision
-pip3 install grpcio
+pip3 install grpcio grpcio-tools
 pip3 install --upgrade google-api-python-client
 pip3 install flwr-datasets[vision]
 

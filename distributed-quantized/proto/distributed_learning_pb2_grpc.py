@@ -3,12 +3,10 @@
 import grpc
 import warnings
 
-import distributed_learning_pb2 as distributed__learning__pb2
+from proto import distributed_learning_pb2 as proto_dot_distributed__learning__pb2
 
-GRPC_GENERATED_VERSION = '1.65.5'
+GRPC_GENERATED_VERSION = '1.71.0'
 GRPC_VERSION = grpc.__version__
-EXPECTED_ERROR_RELEASE = '1.66.0'
-SCHEDULED_RELEASE_DATE = 'August 6, 2024'
 _version_not_supported = False
 
 try:
@@ -18,15 +16,12 @@ except ImportError:
     _version_not_supported = True
 
 if _version_not_supported:
-    warnings.warn(
+    raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in distributed_learning_pb2_grpc.py depends on'
+        + f' but the generated code in proto/distributed_learning_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
-        + f' This warning will become an error in {EXPECTED_ERROR_RELEASE},'
-        + f' scheduled for release on {SCHEDULED_RELEASE_DATE}.',
-        RuntimeWarning
     )
 
 
@@ -41,38 +36,38 @@ class DistributedClientStub(object):
         """
         self.Forward = channel.unary_unary(
                 '/distributed_learning.DistributedClient/Forward',
-                request_serializer=distributed__learning__pb2.Query.SerializeToString,
-                response_deserializer=distributed__learning__pb2.Tensor.FromString,
+                request_serializer=proto_dot_distributed__learning__pb2.Query.SerializeToString,
+                response_deserializer=proto_dot_distributed__learning__pb2.Tensor.FromString,
                 _registered_method=True)
         self.Backward = channel.unary_unary(
                 '/distributed_learning.DistributedClient/Backward',
-                request_serializer=distributed__learning__pb2.Tensor.SerializeToString,
-                response_deserializer=distributed__learning__pb2.Query.FromString,
+                request_serializer=proto_dot_distributed__learning__pb2.Tensor.SerializeToString,
+                response_deserializer=proto_dot_distributed__learning__pb2.Query.FromString,
                 _registered_method=True)
         self.GetModelState = channel.unary_unary(
                 '/distributed_learning.DistributedClient/GetModelState',
-                request_serializer=distributed__learning__pb2.Empty.SerializeToString,
-                response_deserializer=distributed__learning__pb2.ModelState.FromString,
+                request_serializer=proto_dot_distributed__learning__pb2.Empty.SerializeToString,
+                response_deserializer=proto_dot_distributed__learning__pb2.ModelState.FromString,
                 _registered_method=True)
         self.SetModelState = channel.unary_unary(
                 '/distributed_learning.DistributedClient/SetModelState',
-                request_serializer=distributed__learning__pb2.ModelState.SerializeToString,
-                response_deserializer=distributed__learning__pb2.Empty.FromString,
+                request_serializer=proto_dot_distributed__learning__pb2.ModelState.SerializeToString,
+                response_deserializer=proto_dot_distributed__learning__pb2.Empty.FromString,
                 _registered_method=True)
         self.GenerateQuantizedModel = channel.unary_unary(
                 '/distributed_learning.DistributedClient/GenerateQuantizedModel',
-                request_serializer=distributed__learning__pb2.Empty.SerializeToString,
-                response_deserializer=distributed__learning__pb2.Empty.FromString,
+                request_serializer=proto_dot_distributed__learning__pb2.Empty.SerializeToString,
+                response_deserializer=proto_dot_distributed__learning__pb2.Empty.FromString,
                 _registered_method=True)
         self.TestInference = channel.unary_unary(
                 '/distributed_learning.DistributedClient/TestInference',
-                request_serializer=distributed__learning__pb2.Query.SerializeToString,
-                response_deserializer=distributed__learning__pb2.TensorWithMeasure.FromString,
+                request_serializer=proto_dot_distributed__learning__pb2.Query.SerializeToString,
+                response_deserializer=proto_dot_distributed__learning__pb2.TensorWithMeasure.FromString,
                 _registered_method=True)
         self.TestQuantizedInference = channel.unary_unary(
                 '/distributed_learning.DistributedClient/TestQuantizedInference',
-                request_serializer=distributed__learning__pb2.Query.SerializeToString,
-                response_deserializer=distributed__learning__pb2.TensorWithMeasure.FromString,
+                request_serializer=proto_dot_distributed__learning__pb2.Query.SerializeToString,
+                response_deserializer=proto_dot_distributed__learning__pb2.TensorWithMeasure.FromString,
                 _registered_method=True)
 
 
@@ -130,38 +125,38 @@ def add_DistributedClientServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Forward': grpc.unary_unary_rpc_method_handler(
                     servicer.Forward,
-                    request_deserializer=distributed__learning__pb2.Query.FromString,
-                    response_serializer=distributed__learning__pb2.Tensor.SerializeToString,
+                    request_deserializer=proto_dot_distributed__learning__pb2.Query.FromString,
+                    response_serializer=proto_dot_distributed__learning__pb2.Tensor.SerializeToString,
             ),
             'Backward': grpc.unary_unary_rpc_method_handler(
                     servicer.Backward,
-                    request_deserializer=distributed__learning__pb2.Tensor.FromString,
-                    response_serializer=distributed__learning__pb2.Query.SerializeToString,
+                    request_deserializer=proto_dot_distributed__learning__pb2.Tensor.FromString,
+                    response_serializer=proto_dot_distributed__learning__pb2.Query.SerializeToString,
             ),
             'GetModelState': grpc.unary_unary_rpc_method_handler(
                     servicer.GetModelState,
-                    request_deserializer=distributed__learning__pb2.Empty.FromString,
-                    response_serializer=distributed__learning__pb2.ModelState.SerializeToString,
+                    request_deserializer=proto_dot_distributed__learning__pb2.Empty.FromString,
+                    response_serializer=proto_dot_distributed__learning__pb2.ModelState.SerializeToString,
             ),
             'SetModelState': grpc.unary_unary_rpc_method_handler(
                     servicer.SetModelState,
-                    request_deserializer=distributed__learning__pb2.ModelState.FromString,
-                    response_serializer=distributed__learning__pb2.Empty.SerializeToString,
+                    request_deserializer=proto_dot_distributed__learning__pb2.ModelState.FromString,
+                    response_serializer=proto_dot_distributed__learning__pb2.Empty.SerializeToString,
             ),
             'GenerateQuantizedModel': grpc.unary_unary_rpc_method_handler(
                     servicer.GenerateQuantizedModel,
-                    request_deserializer=distributed__learning__pb2.Empty.FromString,
-                    response_serializer=distributed__learning__pb2.Empty.SerializeToString,
+                    request_deserializer=proto_dot_distributed__learning__pb2.Empty.FromString,
+                    response_serializer=proto_dot_distributed__learning__pb2.Empty.SerializeToString,
             ),
             'TestInference': grpc.unary_unary_rpc_method_handler(
                     servicer.TestInference,
-                    request_deserializer=distributed__learning__pb2.Query.FromString,
-                    response_serializer=distributed__learning__pb2.TensorWithMeasure.SerializeToString,
+                    request_deserializer=proto_dot_distributed__learning__pb2.Query.FromString,
+                    response_serializer=proto_dot_distributed__learning__pb2.TensorWithMeasure.SerializeToString,
             ),
             'TestQuantizedInference': grpc.unary_unary_rpc_method_handler(
                     servicer.TestQuantizedInference,
-                    request_deserializer=distributed__learning__pb2.Query.FromString,
-                    response_serializer=distributed__learning__pb2.TensorWithMeasure.SerializeToString,
+                    request_deserializer=proto_dot_distributed__learning__pb2.Query.FromString,
+                    response_serializer=proto_dot_distributed__learning__pb2.TensorWithMeasure.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -189,8 +184,8 @@ class DistributedClient(object):
             request,
             target,
             '/distributed_learning.DistributedClient/Forward',
-            distributed__learning__pb2.Query.SerializeToString,
-            distributed__learning__pb2.Tensor.FromString,
+            proto_dot_distributed__learning__pb2.Query.SerializeToString,
+            proto_dot_distributed__learning__pb2.Tensor.FromString,
             options,
             channel_credentials,
             insecure,
@@ -216,8 +211,8 @@ class DistributedClient(object):
             request,
             target,
             '/distributed_learning.DistributedClient/Backward',
-            distributed__learning__pb2.Tensor.SerializeToString,
-            distributed__learning__pb2.Query.FromString,
+            proto_dot_distributed__learning__pb2.Tensor.SerializeToString,
+            proto_dot_distributed__learning__pb2.Query.FromString,
             options,
             channel_credentials,
             insecure,
@@ -243,8 +238,8 @@ class DistributedClient(object):
             request,
             target,
             '/distributed_learning.DistributedClient/GetModelState',
-            distributed__learning__pb2.Empty.SerializeToString,
-            distributed__learning__pb2.ModelState.FromString,
+            proto_dot_distributed__learning__pb2.Empty.SerializeToString,
+            proto_dot_distributed__learning__pb2.ModelState.FromString,
             options,
             channel_credentials,
             insecure,
@@ -270,8 +265,8 @@ class DistributedClient(object):
             request,
             target,
             '/distributed_learning.DistributedClient/SetModelState',
-            distributed__learning__pb2.ModelState.SerializeToString,
-            distributed__learning__pb2.Empty.FromString,
+            proto_dot_distributed__learning__pb2.ModelState.SerializeToString,
+            proto_dot_distributed__learning__pb2.Empty.FromString,
             options,
             channel_credentials,
             insecure,
@@ -297,8 +292,8 @@ class DistributedClient(object):
             request,
             target,
             '/distributed_learning.DistributedClient/GenerateQuantizedModel',
-            distributed__learning__pb2.Empty.SerializeToString,
-            distributed__learning__pb2.Empty.FromString,
+            proto_dot_distributed__learning__pb2.Empty.SerializeToString,
+            proto_dot_distributed__learning__pb2.Empty.FromString,
             options,
             channel_credentials,
             insecure,
@@ -324,8 +319,8 @@ class DistributedClient(object):
             request,
             target,
             '/distributed_learning.DistributedClient/TestInference',
-            distributed__learning__pb2.Query.SerializeToString,
-            distributed__learning__pb2.TensorWithMeasure.FromString,
+            proto_dot_distributed__learning__pb2.Query.SerializeToString,
+            proto_dot_distributed__learning__pb2.TensorWithMeasure.FromString,
             options,
             channel_credentials,
             insecure,
@@ -351,8 +346,8 @@ class DistributedClient(object):
             request,
             target,
             '/distributed_learning.DistributedClient/TestQuantizedInference',
-            distributed__learning__pb2.Query.SerializeToString,
-            distributed__learning__pb2.TensorWithMeasure.FromString,
+            proto_dot_distributed__learning__pb2.Query.SerializeToString,
+            proto_dot_distributed__learning__pb2.TensorWithMeasure.FromString,
             options,
             channel_credentials,
             insecure,
