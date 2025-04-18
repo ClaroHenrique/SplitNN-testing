@@ -5,6 +5,7 @@ from utils.utils import *
 import itertools
 import os
 import sys
+import tracemalloc
 
 sys.path.append(os.path.abspath("proto"))
 import distributed_learning_pb2_grpc as pb2_grpc
@@ -84,16 +85,22 @@ def process_backward_query(grad):
 
 def process_test_inference_query(model, batch_size, msg):
     print("process_test_inference_query -", msg)
+    tracemalloc.start()
+    mem_first, _ = tracemalloc.get_traced_memory()
     time_start = time.time()
     measure = {}
     outputs = None
+    
     with torch.no_grad():
         inputs, labels = get_test_sample()
         outputs = model(inputs)
     measure["time-to-output"] = time.time() - time_start
-    
-    outputs, labels = pickle.dumps(outputs), pickle.dumps(labels)
+    _, mem_peak = tracemalloc.get_traced_memory()
 
+    outputs, labels = pickle.dumps(outputs), pickle.dumps(labels)
+    #measure["mem-peak"] = mem_peak
+    #measure["mem-first"] = mem_first
+    measure["mem-usage"] = mem_peak - mem_first
     measure["time"] = time.time() - time_start
     measure["bandwidth"] = len(outputs) + len(labels)
     measure["model-size"] = size_of_model(model)
@@ -134,13 +141,13 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
         client_model.load_state_dict(model_state)
         print("PARAMETER SUM:", model_parameters_sum(client_model))
         return pb2.Empty()
-    
+
     def GenerateQuantizedModel(self, request, context):
         global client_quantized_model
         #TODO: generate decent calib data loader    
         client_quantized_model = generate_quantized_model(client_model, calib_dataloader=train_data_loader)
         return pb2.Empty()
-    
+
     def TestInference(self, request, context):
         batch_size = request.batch_size
         request_id = request.request_id
@@ -151,7 +158,7 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
         pb2_tensor = pb2.Tensor(tensor=tensor_IR, label=label)
         pb2_measure = pb2.Measure(measure=measure)
         return pb2.TensorWithMeasure(tensor=pb2_tensor, measure=pb2_measure)
-    
+
     def TestQuantizedInference(self, request, context):
         batch_size = request.batch_size
         request_id = request.request_id
