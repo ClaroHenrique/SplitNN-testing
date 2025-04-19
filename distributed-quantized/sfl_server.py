@@ -10,8 +10,8 @@ import distributed_learning_pb2 as pb2
 import pickle
 
 ##### CUSTOMIZE MODEL AND DATA #####
-from model.resnet import ClientModel
-from model.resnet import ServerModel
+from model.models import ClientModel
+from model.models import ServerModel
 from dataset.cifar10_non_iid import get_dataset_name
 ####################################
 from optimizer.adam import create_optimizer
@@ -25,6 +25,8 @@ load_dotenv()
 loss_fn = nn.CrossEntropyLoss()
 learning_rate = float(os.getenv("LEARNING_RATE"))
 client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
+model_option = os.getenv("MODEL")
+split_point = int(os.getenv("SPLIT_POINT"))
 auto_save_models = int(os.getenv("AUTO_SAVE_MODELS"))
 auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
 dataset_name = get_dataset_name()
@@ -32,8 +34,8 @@ global_request_id = 1
 
 
 # Load model and optimizer
-server_model, model_name = ServerModel()
-_, client_model_name = ClientModel()
+server_model, model_name = ServerModel(model_option, split_point=split_point)
+_, client_model_name = ClientModel(model_option, split_point=split_point)
 if auto_load_models:
     load_model_if_exists(server_model, model_name, dataset_name)
 optimizer, scheduler = create_optimizer(server_model.parameters(), learning_rate)
@@ -216,6 +218,7 @@ def print_test_accuracy(clients, num_instances, quantized=False):
     print(f"Loss: ", loss)
     print(f"Measure mean: ", aggregate_measures_mean(all_measures))
     print()
+    return correct / total
 
 async def aggregate_client_model_params(clients):
     num_clients = len(clients)
@@ -268,24 +271,34 @@ if __name__ == '__main__':
     generated_quantized = False
     while True:
         print("======== MENU ========")
-        print("[1] - Run 100 train interations")
+        print("[1] - Train until accuracy reaches target")
         print("[2] - Quantize client model" + ((generated_quantized and ".") or (" (pendent)")))
         print("[3] - Show partial test dataset accuracy")
         print("[4] - Show full test dataset accuracy ")
         print("[0] - Sair")
         op = input()
-        if op == '1':
-            num_iterations = 100
-            for i in range(num_iterations):
-                print(i, '/' , num_iterations, '=', i/num_iterations)
+        if op == "1":
+            target_acc = input("Set target accuracy (def: 0.6): ")
+            if target_acc == "":
+                target_acc = 0.6
+            else:
+                target_acc = float(target_acc)
+
+            i = 0
+            while True:
+                i += 1
+                print(f"Training iteration {i}")
                 # Training models
                 asyncio.run(train_client_server_models(clients))
                 # Aggregating client model parameters
                 asyncio.run(aggregate_client_model_params(clients))
                 # Estimate test dataset error
                 generate_quantized_models(clients)
-                print_test_accuracy(clients, num_instances=client_batch_size)
-                print_test_accuracy(clients, num_instances=client_batch_size, quantized=True)
+                full_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=False)
+                quant_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=True)
+                if full_acc >= target_acc:
+                    print(f"Accuracy {full_acc} reached")
+                    break
         elif op == '2':
             generate_quantized_models(clients)
             generated_quantized = True

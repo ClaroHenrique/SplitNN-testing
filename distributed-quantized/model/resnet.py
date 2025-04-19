@@ -3,7 +3,7 @@
 import torch
 import torch.nn as nn
 
-__all__ = ['ClientModel', 'ServerModel']
+__all__ = ['resnet18', 'resnet34', 'resnet50']
 
 # model_urls = {
 #     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
@@ -273,11 +273,3 @@ def resnet50(is_client, split_point=0):
     model = _resnet('resnet50', Bottleneck, [3, 4, 6, 3], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
     model_name = 'resnet50_' + str(split_point)
     return model, model_name
-
-def ClientModel(split_point=1):
-    model, model_name = resnet18(is_client=True, split_point=split_point)
-    return model, model_name + "_client"
-
-def ServerModel(split_point=1):
-    model, model_name = resnet18(is_client=False, split_point=split_point)
-    return model, model_name + "_server"
