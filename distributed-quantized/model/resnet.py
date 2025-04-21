@@ -262,14 +262,14 @@ def _resnet(arch, block, layers, pretrained, progress, is_client, split_point):
 def resnet18(is_client, split_point=0):
     model = _resnet('resnet18', BasicBlock, [2, 2, 2, 2], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
     model_name = 'resnet18_' + str(split_point)
-    return model, model_name
+    return model
 
 def resnet34(is_client, split_point=0):
     model = _resnet('resnet34', BasicBlock, [3, 4, 6, 3], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
     model_name = 'resnet34_' + str(split_point)
-    return model, model_name
+    return model
 
 def resnet50(is_client, split_point=0):
     model = _resnet('resnet50', Bottleneck, [3, 4, 6, 3], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
     model_name = 'resnet50_' + str(split_point)
-    return model, model_name
+    return model

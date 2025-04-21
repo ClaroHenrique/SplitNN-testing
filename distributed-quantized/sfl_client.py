@@ -22,9 +22,9 @@ import grpc
 from concurrent import futures
 import time
 ##### CUSTOMIZE MODEL AND DATA #####
-from model.resnet import ClientModel
-from dataset.cifar10_non_iid import get_data_loaders #TODO use test dataset ??
-from dataset.cifar10_non_iid import get_dataset_name
+from model.models import ClientModel
+from model.models import ServerModel
+from dataset.datasets import get_data_loaders #TODO use test dataset ??
 ####################################
 from model.quantization import generate_quantized_model
 from optimizer.adam import create_optimizer
@@ -36,20 +36,24 @@ client_id = int(args.client_id)
 
 load_dotenv()
 auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
-dataset_name = get_dataset_name()
 print("auto_load_models", auto_load_models)
 
-client_quantized_model = None
-client_model, model_name = ClientModel()
-if auto_load_models:
-    load_model_if_exists(client_model, model_name, dataset_name)
 
+model_name = os.getenv("MODEL")
+dataset_name = os.getenv("DATASET")
 image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
 batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
+split_point = int(os.getenv("SPLIT_POINT"))
 learning_rate = float(os.getenv("LEARNING_RATE"))
 print("LR", learning_rate)
 
-train_data_loader, test_data_loader = get_data_loaders(batch_size=batch_size, client_id=client_id, image_size = image_size)
+
+client_quantized_model = None
+client_model = ClientModel(model_name, split_point=split_point)
+if auto_load_models:
+    load_model_if_exists(client_model, model_name, is_client=True, dataset_name=dataset_name)
+
+train_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id, image_size = image_size)
 train_iter = itertools.cycle(train_data_loader)
 test_iter = itertools.cycle(test_data_loader)
 

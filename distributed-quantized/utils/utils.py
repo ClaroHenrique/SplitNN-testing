@@ -16,10 +16,18 @@ def model_parameters_sum(model):
 def size_of_model(model):
     return len(pickle.dumps(model.state_dict()))
 
-def save_state_dict(state_dict, model_name, dataset_name):
+def save_state_dict(state_dict, model_name, is_client, dataset_name):
+    if is_client:
+        model_name = f"{model_name}_client"
+    else:
+        model_name = f"{model_name}_server"
     torch.save(state_dict, f"./model-state/{model_name}_{dataset_name}.pth")
 
-def load_model_if_exists(model, model_name, dataset_name):
+def load_model_if_exists(model, model_name, is_client, dataset_name):
+    if is_client:
+        model_name = f"{model_name}_client"
+    else:
+        model_name = f"{model_name}_server"
     path = f"./model-state/{model_name}_{dataset_name}.pth"
     print(f"os.path.exists(path): {os.path.exists(path)}")
     if os.path.exists(path):

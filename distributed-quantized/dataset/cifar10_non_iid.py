@@ -12,9 +12,6 @@ from flwr_datasets.partitioner import DirichletPartitioner
 
 import numpy as np
 
-def get_dataset_name():
-    return "cifar10_noniid"
-
 class Cifar10_Train_NonIID_Dataset(Dataset):
     def __init__(self, client_id, num_clients, dirichlet_alpha = 0.3, random_state=42, transform=None):
         # self.client_id = client_id
