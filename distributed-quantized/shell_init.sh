@@ -2,8 +2,8 @@
 python3 -m venv .venv
 source .venv/bin/activate
 
-python -m pip install --upgrade pip
-pip3 install dontenv
+python3 -m pip install --upgrade pip
+pip3 install python-dotenv
 pip3 install torch
 pip3 install torchvision
 pip3 install grpcio grpcio-tools

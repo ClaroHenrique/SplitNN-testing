@@ -177,7 +177,7 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
 
 def serve(client_id):
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
-    client_address = os.getenv(f"CLIENT_ADDRESSES").split(",")[client_id]
+    client_address = os.getenv(f"CLIENT_LOCALHOST").split(",")[client_id]
     client_port = client_address.split(":")[1]
     print("Client address", client_address)
 
