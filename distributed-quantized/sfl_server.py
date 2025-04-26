@@ -248,9 +248,6 @@ async def aggregate_client_model_params(clients):
     
     # get aggregated weights from server
     new_state_dict = dict(zip(model_state_keys, aggregated_params))
-    if auto_save_models:
-        save_state_dict(new_state_dict, model_name=model_name, is_client=True, dataset_name=dataset_name)
-
     await set_client_model_params(clients, new_state_dict)
 
 def generate_quantized_models(clients):
@@ -262,12 +259,16 @@ if __name__ == '__main__':
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
 
-    # Initializate client model params
+    # Initializate server and clients model params
     if auto_load_models:
+        # server model
+        load_model_if_exists(server_model, model_name, is_client=False, dataset_name=dataset_name)
+        print("Server model loaded")
+        # client model
         client_model = ClientModel(model_name, split_point=split_point)
         load_model_if_exists(client_model, model_name, is_client=True, dataset_name=dataset_name)
         client_model_state_dict = client_model.state_dict()
-        print("PARAMETER SUM:", model_parameters_sum(client_model))
+        print("Client parameter SUM:", model_parameters_sum(client_model))
 
         asyncio.run(set_client_model_params(clients, client_model_state_dict))
         print("Client models loaded")
@@ -304,6 +305,7 @@ if __name__ == '__main__':
                 if auto_save_models and i % 10 == 0:
                     if auto_save_models:
                         save_state_dict(server_model.state_dict(), model_name, is_client=False, dataset_name=dataset_name)
+                        save_state_dict(clients[0].get_model_state(), model_name, is_client=True, dataset_name=dataset_name)
                     full_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=False)
                     quant_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=True)
                     stop_criteria = full_acc >= target_acc
