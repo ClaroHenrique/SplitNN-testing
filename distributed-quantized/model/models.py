@@ -1,4 +1,6 @@
 from model.resnet import *
+import torch
+
 
 def get_model(name, split_point, is_client):
     if name == 'resnet18':
@@ -13,6 +15,13 @@ def get_model(name, split_point, is_client):
     #     model = resnet152(split_point=split_point, is_client=is_client)
     else:
         raise ValueError(f"Model {name} not supported.")
+    
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+
+    model.to(device)
     return model
 
 def ServerModel(name, split_point):
