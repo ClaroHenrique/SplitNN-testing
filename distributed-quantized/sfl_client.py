@@ -35,9 +35,6 @@ args = parser.parse_args()
 client_id = int(args.client_id)
 
 load_dotenv()
-auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
-print("auto_load_models", auto_load_models)
-
 
 model_name = os.getenv("MODEL")
 dataset_name = os.getenv("DATASET")
@@ -50,8 +47,6 @@ print("LR", learning_rate)
 
 client_quantized_model = None
 client_model = ClientModel(model_name, split_point=split_point)
-if auto_load_models:
-    load_model_if_exists(client_model, model_name, is_client=True, dataset_name=dataset_name)
 
 train_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id, image_size = image_size)
 train_iter = itertools.cycle(train_data_loader)

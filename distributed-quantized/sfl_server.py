@@ -34,9 +34,6 @@ global_request_id = 1
 
 # Load model and optimizer
 server_model = ServerModel(model_name, split_point=split_point)
-client_model_name = ClientModel(model_name, split_point=split_point)
-if auto_load_models:
-    load_model_if_exists(server_model, model_name, is_client=False, dataset_name=dataset_name)
 optimizer, scheduler = create_optimizer(server_model.parameters(), learning_rate)
 
 
@@ -168,10 +165,6 @@ async def train_client_server_models(clients):
     concat_IRs = torch.concatenate(clients_IRs).detach()
     concat_labels = torch.concatenate(clients_labels).detach()
     concat_IRs_grad = server_forward(concat_IRs, concat_labels)
-
-    if auto_save_models:
-        save_state_dict(server_model.state_dict(), model_name, is_client=False, dataset_name=dataset_name)
-
     debug_print(concat_IRs.sum())
 
     # Send IRs gradients back to the clients (train client model)
@@ -219,6 +212,14 @@ def print_test_accuracy(clients, num_instances, quantized=False):
     print()
     return correct / total
 
+async def set_client_model_params(clients, model_state):
+    async def call_client_set_model_async(client, new_state_dict):
+        return client.set_model_state(new_state_dict)
+
+    # set update every client model
+    set_model_tasks = [asyncio.create_task(call_client_set_model_async(client, model_state)) for client in clients]
+    await asyncio.gather(*set_model_tasks)
+
 async def aggregate_client_model_params(clients):
     num_clients = len(clients)
 
@@ -250,12 +251,7 @@ async def aggregate_client_model_params(clients):
     if auto_save_models:
         save_state_dict(new_state_dict, model_name=model_name, is_client=True, dataset_name=dataset_name)
 
-    async def call_client_set_model_async(client, new_state_dict):
-        return client.set_model_state(new_state_dict)
-
-    # set update every client model
-    set_model_tasks = [asyncio.create_task(call_client_set_model_async(client, new_state_dict)) for client in clients]
-    await asyncio.gather(*set_model_tasks)
+    await set_client_model_params(clients, new_state_dict)
 
 def generate_quantized_models(clients):
     for client in clients:
@@ -265,6 +261,16 @@ if __name__ == '__main__':
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
+
+    # Initializate client model params
+    if auto_load_models:
+        client_model = ClientModel(model_name, split_point=split_point)
+        load_model_if_exists(client_model, model_name, is_client=True, dataset_name=dataset_name)
+        client_model_state_dict = client_model.state_dict()
+        print("PARAMETER SUM:", model_parameters_sum(client_model))
+
+        asyncio.run(set_client_model_params(clients, client_model_state_dict))
+        print("Client models loaded")
 
     op = ""
     generated_quantized = False
@@ -286,6 +292,7 @@ if __name__ == '__main__':
             i = 0
             while True:
                 i += 1
+    
                 print(f"Training iteration {i}")
                 # Training models
                 asyncio.run(train_client_server_models(clients))
@@ -293,11 +300,16 @@ if __name__ == '__main__':
                 asyncio.run(aggregate_client_model_params(clients))
                 # Estimate test dataset error
                 generate_quantized_models(clients)
-                full_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=False)
-                #quant_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=True)
-                if full_acc >= target_acc:
-                    print(f"Accuracy {full_acc} reached")
-                    break
+                
+                if auto_save_models and i % 10 == 0:
+                    if auto_save_models:
+                        save_state_dict(server_model.state_dict(), model_name, is_client=False, dataset_name=dataset_name)
+                    full_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=False)
+                    quant_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=True)
+                    stop_criteria = full_acc >= target_acc
+                    if stop_criteria:
+                        print(f"Accuracy {full_acc} reached")
+                        break
         elif op == '2':
             generate_quantized_models(clients)
             generated_quantized = True
