@@ -10,7 +10,7 @@ import pickle
 from model.models import ClientModel
 from model.models import ServerModel
 ####################################
-from optimizer.adam import create_optimizer
+from optimizer.sgd import create_optimizer
 from utils.utils import *
 
 import torch
@@ -223,7 +223,7 @@ while True:
             save_state_dict(client_models[0].state_dict(), model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
         full_acc = print_test_accuracy(num_instances=10000, quantized=False)
         stop_criteria = full_acc >= target_acc
-        debug_print("LR", server_scheduler.get_last_lr())
+        print(f"LR  {server_scheduler.get_last_lr()[0]:.10f}")
 
         if stop_criteria:
             print(f"Accuracy {full_acc} reached")
