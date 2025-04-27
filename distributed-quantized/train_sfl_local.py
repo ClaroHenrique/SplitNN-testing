@@ -111,6 +111,32 @@ def client_process_backward_query(output, grad, client_id):
     #scheduler.step()
     #debug_print(scheduler.get_last_lr())
 
+async def aggregate_client_model_params():
+    num_clients = len(client_models)
+
+    client_model_states = [client_model.state_dict() for client_model in client_models]
+    model_state_keys = client_model_states[0].keys()
+    client_model_weights = [list(model_state.values()) for model_state in client_model_states]
+
+    # aggregate parameters by mean
+    aggregated_params = []
+    for l, layer_key in enumerate(model_state_keys):
+        layer_params = []
+        #debug_print(layer_key, 'num_batches_tracked' in layer_key)
+
+        if 'num_batches_tracked' not in layer_key:
+            for client_w in client_model_weights:
+                layer_params.append(client_w[l])
+            layer_mean = torch.stack(layer_params, dim=0).mean(dim=0)
+        else:
+            layer_mean = client_model_weights[0][l].detach()
+        aggregated_params.append(layer_mean)
+    
+    # get aggregated weights from server
+    new_state_dict = dict(zip(model_state_keys, aggregated_params))
+    for client_model in client_models:
+        client_model.load_state_dict(new_state_dict)
+
 def train_client_server_models():
     forward_tasks = []
     clients_IRs = []
@@ -138,6 +164,9 @@ def train_client_server_models():
     clients_IRs_grad = concat_IRs_grad.split(client_batch_size)
     for client_id, client_IR, client_IR_grad in zip(range(len(client_models)), clients_IRs, clients_IRs_grad):
         client_process_backward_query(client_IR, client_IR_grad, client_id)
+    
+    debug_print("Aggregating client models")
+    aggregate_client_model_params()
 
 
 def print_test_accuracy(num_instances, quantized=False):
