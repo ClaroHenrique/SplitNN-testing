@@ -16,7 +16,8 @@ def get_model(name, split_point, is_client):
     else:
         raise ValueError(f"Model {name} not supported.")
     
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and not is_client:
+        # If the server is running on a GPU, use it
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")

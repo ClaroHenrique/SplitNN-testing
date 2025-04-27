@@ -40,6 +40,8 @@ optimizer, scheduler = create_optimizer(server_model.parameters(), learning_rate
 def server_forward(tensor_IR, labels):
     # update server model, returns grad of the input 
     # used to continue the backpropagation in client_model
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    tensor_IR, labels = tensor_IR.to(device), labels.to(device)
     tensor_IR.requires_grad = True
     optimizer.zero_grad()
     outputs = server_model(tensor_IR)
@@ -50,7 +52,7 @@ def server_forward(tensor_IR, labels):
     debug_print("updating server model")
     debug_print(torch.unique(labels, return_counts=True))
     debug_print("LR", scheduler.get_last_lr())
-    return tensor_IR.grad.detach()
+    return tensor_IR.grad.detach().to('cpu')
 
 def server_test_inference(tensor_IR, labels):
     # update server model, returns grad of the input
