@@ -111,7 +111,7 @@ def client_process_backward_query(output, grad, client_id):
     #scheduler.step()
     #debug_print(scheduler.get_last_lr())
 
-async def aggregate_client_model_params():
+def aggregate_client_model_params():
     num_clients = len(client_models)
 
     client_model_states = [client_model.state_dict() for client_model in client_models]
