@@ -67,7 +67,7 @@ def server_forward(tensor_IR, labels):
     loss = loss_fn(outputs, labels)
     loss.backward()
     server_optimizer.step()
-    #scheduler.step()
+    scheduler.step()
     debug_print("updating server model")
     debug_print(torch.unique(labels, return_counts=True))
     debug_print("LR", server_scheduler.get_last_lr())
