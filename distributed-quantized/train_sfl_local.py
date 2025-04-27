@@ -223,6 +223,8 @@ while True:
             save_state_dict(client_models[0].state_dict(), model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
         full_acc = print_test_accuracy(num_instances=10000, quantized=False)
         stop_criteria = full_acc >= target_acc
+        debug_print("LR", server_scheduler.get_last_lr())
+
         if stop_criteria:
             print(f"Accuracy {full_acc} reached")
             break

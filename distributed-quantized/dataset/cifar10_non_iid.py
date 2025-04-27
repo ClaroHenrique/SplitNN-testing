@@ -51,11 +51,13 @@ def get_data_loaders(batch_size, client_id, num_clients, image_size):
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Resize(image_size), # Resize to 32x32
     ]) # 32x32
 
     transform_test = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Resize(image_size), # Resize to 32x32
     ]) 
     
     train_dataset = Cifar10_Train_NonIID_Dataset(client_id=client_id, num_clients=num_clients, transform=transform_train)
