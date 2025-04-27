@@ -43,7 +43,6 @@ batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
 split_point = int(os.getenv("SPLIT_POINT"))
 learning_rate = float(os.getenv("LEARNING_RATE"))
 num_clients = len(os.getenv("CLIENT_ADDRESSES").split(","))
-print(f"LR  {learning_rate:.10f}")
 
 
 client_quantized_model = None
