@@ -44,7 +44,7 @@ class Cifar10_Train_NonIID_Dataset(Dataset):
 
 
 
-def get_data_loaders(batch_size, client_id, image_size):
+def get_data_loaders(batch_size, client_id, num_clients, image_size):
     # TODO: resize images
     transform_train = transforms.Compose([
         transforms.ToTensor(),
@@ -58,7 +58,7 @@ def get_data_loaders(batch_size, client_id, image_size):
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ]) 
     
-    train_dataset = Cifar10_Train_NonIID_Dataset(client_id=client_id, num_clients=4, transform=transform_train)
+    train_dataset = Cifar10_Train_NonIID_Dataset(client_id=client_id, num_clients=num_clients, transform=transform_train)
     test_dataset = torchvision.datasets.CIFAR10(root='../data', train=False, download=True, transform=transform_test)
 
     # Create a data loader

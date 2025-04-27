@@ -29,6 +29,7 @@ image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
 loss_fn = nn.CrossEntropyLoss()
 global_request_id = 1
 client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
+num_clients = len(client_addresses)
 
 # Load model and optimizer
 server_model = ServerModel(model_name, split_point=split_point)
@@ -42,7 +43,7 @@ client_schedulers = [scheduler for _, scheduler in client_optimizers_schedulers]
 from dataset.datasets import get_data_loaders #TODO use test dataset ??
 import itertools
 
-train_test_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, image_size=image_size) for client_id in range(len(client_models))]
+train_test_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, num_clients=num_clients, image_size=image_size) for client_id in range(len(client_models))]
 train_iters = [itertools.cycle(train_data_loader) for train_data_loader, _ in train_test_data_loaders]
 test_iters = [itertools.cycle(test_data_loader) for _, test_data_loader in train_test_data_loaders]
 
@@ -67,7 +68,7 @@ def server_forward(tensor_IR, labels):
     loss = loss_fn(outputs, labels)
     loss.backward()
     server_optimizer.step()
-    scheduler.step()
+    server_scheduler.step()
     debug_print("updating server model")
     debug_print(torch.unique(labels, return_counts=True))
     debug_print("LR", server_scheduler.get_last_lr())
