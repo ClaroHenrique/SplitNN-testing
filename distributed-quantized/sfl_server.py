@@ -142,10 +142,12 @@ async def train_client_server_models(clients):
     clients_labels = []
     clients_request_ids = []
     num_clients = len(clients)
+    debug_print("Training models")
 
     async def call_client_forward_async(client, batch_size, request_id):
         return client.forward(batch_size=batch_size, request_id=request_id)
 
+    print("Sending forward requests to clients")
     # Collect IR and Labels from the client
     for client in clients:
         global global_request_id
@@ -157,22 +159,25 @@ async def train_client_server_models(clients):
         )
         global_request_id += 1
     
+    debug_print("Waiting for client forward tasks")
     for task in forward_tasks:
         tensor_IR, labels, request_id = await task
         clients_IRs.append(tensor_IR)
         clients_labels.append(labels)
         clients_request_ids.append(request_id)
 
+    debug_print("Concat IRs and labels")
     # Concat IR and labels to feed and train server model
     concat_IRs = torch.concatenate(clients_IRs).detach()
     concat_labels = torch.concatenate(clients_labels).detach()
+    debug_print("Feed server model with IRs")
     concat_IRs_grad = server_forward(concat_IRs, concat_labels)
     debug_print(concat_IRs.sum())
 
     # Send IRs gradients back to the clients (train client model)
     async def call_client_backward_async(client, grad, request_id):
         return client.backward(grad=grad, request_id=req_id)
-
+    debug_print("Sending backward requests to clients")
     backward_tasks = []
     clients_IRs_grad = concat_IRs_grad.split(client_batch_size)
     for client, client_IR_grad, req_id in zip(clients, clients_IRs_grad, clients_request_ids):
@@ -180,6 +185,7 @@ async def train_client_server_models(clients):
             asyncio.create_task(
                 call_client_backward_async(client, client_IR_grad, request_id=req_id))
         )
+    debug_print("Waiting for client backward tasks")
     await asyncio.gather(*backward_tasks)
 
 
