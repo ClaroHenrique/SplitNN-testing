@@ -13,7 +13,7 @@ import pickle
 from model.models import ClientModel
 from model.models import ServerModel
 ####################################
-from optimizer.adam import create_optimizer
+from optimizer.sgd import create_optimizer
 from utils.utils import *
 
 import torch
