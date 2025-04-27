@@ -57,13 +57,15 @@ def server_forward(tensor_IR, labels):
 def server_test_inference(tensor_IR, labels):
     # update server model, returns grad of the input
     # used to continue the backpropagation in client_model
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     correct = 0
     total = 0
     loss = 0
     debug_print(torch.unique(labels, return_counts=True))
     with torch.no_grad():
+        tensor_IR = tensor_IR.to(device)
         tensor_IR.requires_grad = False
-        outputs = server_model(tensor_IR)
+        outputs = server_model(tensor_IR).to('cpu')
         loss = loss_fn(outputs, labels)
 
         pred_class = torch.argmax(outputs, dim=1)
