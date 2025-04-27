@@ -28,6 +28,7 @@ client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
 split_point = int(os.getenv("SPLIT_POINT"))
 auto_save_models = int(os.getenv("AUTO_SAVE_MODELS"))
 auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
+num_clients = len(os.getenv("CLIENT_ADDRESSES").split(","))
 loss_fn = nn.CrossEntropyLoss()
 global_request_id = 1
 
@@ -314,8 +315,8 @@ if __name__ == '__main__':
                 
                 if auto_save_models and i % 10 == 0:
                     if auto_save_models:
-                        save_state_dict(server_model.state_dict(), model_name, split_point, is_client=False, dataset_name=dataset_name)
-                        save_state_dict(clients[0].get_model_state(), model_name, split_point, is_client=True, dataset_name=dataset_name)
+                        save_state_dict(server_model.state_dict(), model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
+                        save_state_dict(clients[0].get_model_state(), model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
                     full_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=False)
                     quant_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=True)
                     stop_criteria = full_acc >= target_acc

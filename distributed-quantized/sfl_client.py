@@ -42,13 +42,14 @@ image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
 batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
 split_point = int(os.getenv("SPLIT_POINT"))
 learning_rate = float(os.getenv("LEARNING_RATE"))
+num_clients = len(os.getenv("CLIENT_ADDRESSES").split(","))
 print("LR", learning_rate)
 
 
 client_quantized_model = None
 client_model = ClientModel(model_name, split_point=split_point)
 
-train_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id, image_size = image_size)
+train_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id,num_clients=num_clients, image_size = image_size)
 train_iter = itertools.cycle(train_data_loader)
 test_iter = itertools.cycle(test_data_loader)
 
