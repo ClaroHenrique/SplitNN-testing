@@ -50,11 +50,11 @@ test_iters = [itertools.cycle(test_data_loader) for _, test_data_loader in train
 
 if auto_load_models:
         # server model
-        load_model_if_exists(server_model, model_name, split_point, is_client=False, dataset_name=dataset_name)
+        load_model_if_exists(server_model, model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
         print("Server model loaded")
         # client model
         for client_model in client_models:
-            load_model_if_exists(client_model, model_name, split_point, is_client=True, dataset_name=dataset_name)
+            load_model_if_exists(client_model, model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
 
 
 def server_forward(tensor_IR, labels):
