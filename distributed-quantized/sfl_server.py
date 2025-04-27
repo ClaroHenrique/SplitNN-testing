@@ -314,8 +314,8 @@ if __name__ == '__main__':
                 
                 if auto_save_models and i % 10 == 0:
                     if auto_save_models:
-                        save_state_dict(server_model.state_dict(), model_name, is_client=False, dataset_name=dataset_name)
-                        save_state_dict(clients[0].get_model_state(), model_name, is_client=True, dataset_name=dataset_name)
+                        save_state_dict(server_model.state_dict(), model_name, split_point, is_client=False, dataset_name=dataset_name)
+                        save_state_dict(clients[0].get_model_state(), model_name, split_point, is_client=True, dataset_name=dataset_name)
                     full_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=False)
                     quant_acc = print_test_accuracy(clients, num_instances=client_batch_size, quantized=True)
                     stop_criteria = full_acc >= target_acc
