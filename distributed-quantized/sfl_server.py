@@ -57,7 +57,7 @@ def server_forward(tensor_IR, labels):
 def server_test_inference(tensor_IR, labels):
     # update server model, returns grad of the input
     # used to continue the backpropagation in client_model
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     correct = 0
     total = 0
     loss = 0
