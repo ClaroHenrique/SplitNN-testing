@@ -11,6 +11,7 @@ def get_data_loaders(batch_size, client_id, image_size):
         transforms.ToTensor(),
         transforms.Resize(image_size),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        transforms.Resize(image_size), # Resize to 32x32
     ]) # 32x32
 
     train_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform)

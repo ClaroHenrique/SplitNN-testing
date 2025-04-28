@@ -30,9 +30,13 @@ loss_fn = nn.CrossEntropyLoss()
 global_request_id = 1
 client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
 num_clients = len(client_addresses)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 # Load model and optimizer
-server_model = ServerModel(model_name, split_point=split_point)
+# import resnet18
+from torchvision.models import resnet18
+server_model = resnet18(num_classes=10).to(device)
 client_models = [ClientModel(model_name, split_point=split_point) for _ in range(len(client_addresses))]
 server_optimizer, server_scheduler = create_optimizer(server_model.parameters(), learning_rate)
 
@@ -60,7 +64,6 @@ if auto_load_models:
 def server_forward(tensor_IR, labels):
     # update server model, returns grad of the input 
     # used to continue the backpropagation in client_model
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     tensor_IR, labels = tensor_IR.to(device), labels.to(device)
     tensor_IR.requires_grad = True
     server_optimizer.zero_grad()
