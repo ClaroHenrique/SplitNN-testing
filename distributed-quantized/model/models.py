@@ -1,4 +1,5 @@
 from model.resnet import *
+from model.resnet_custom import *
 import torch
 
 
@@ -9,10 +10,16 @@ def get_model(name, split_point, is_client):
         model = resnet34(split_point=split_point, is_client=is_client)
     elif name == 'resnet50':
         model = resnet50(split_point=split_point, is_client=is_client)
-    # elif name == 'resnet101':
-    #     model = resnet101(split_point=split_point, is_client=is_client)
-    # elif name == 'resnet152':
-    #     model = resnet152(split_point=split_point, is_client=is_client)
+    elif name == 'ResNet18_custom':
+        model = ResNet18_custom(split_point=split_point, is_client=is_client)
+    elif name == 'ResNet34_custom':
+        model = ResNet34_custom(split_point=split_point, is_client=is_client)
+    elif name == 'ResNet50_custom':
+        model = ResNet50_custom(split_point=split_point, is_client=is_client)
+    elif name == 'ResNet101_custom':
+        model = ResNet101_custom(split_point=split_point, is_client=is_client)
+    elif name == 'ResNet152_custom':
+        model = ResNet152_custom(split_point=split_point, is_client=is_client)
     else:
         raise ValueError(f"Model {name} not supported.")
     
