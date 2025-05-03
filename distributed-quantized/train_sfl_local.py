@@ -205,14 +205,10 @@ def print_test_accuracy(num_instances, quantized=False):
 
 
 #####################################################################################
-target_acc = input("Set target accuracy (def: 0.6): ")
-if target_acc == "":
-    target_acc = 0.6
-else:
-    target_acc = float(target_acc)
+target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
 
 epoch = 0
-interations_per_epoch = 50000 // client_batch_size + 1 #TODO: this number is hardcoded, only works for cifar10
+iterations_per_epoch = 50000 // (client_batch_size * num_clients) + 1 #TODO: this magic number is hardcoded, only works for cifar10
 i = 0
 while True:
     i += 1
