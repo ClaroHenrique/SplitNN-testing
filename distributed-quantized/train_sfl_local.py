@@ -34,8 +34,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load model and optimizer
 # import resnet18
-from torchvision.models import resnet18
-server_model = resnet18(num_classes=10).to(device)
+server_model = ServerModel(model_name, split_point=split_point)
 client_models = [ClientModel(model_name, split_point=split_point) for _ in range(len(client_addresses))]
 server_optimizer, server_scheduler = create_optimizer(server_model.parameters(), learning_rate)
 
