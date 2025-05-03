@@ -110,8 +110,10 @@ def client_process_backward_query(output, grad, client_id):
     client_optimizers[client_id].zero_grad()
     output.backward(grad)
     client_optimizers[client_id].step()
-    #scheduler.step()
-    #debug_print(scheduler.get_last_lr())
+    #set LR manually
+    for param_group in client_optimizers[client_id].param_groups:
+        param_group['lr'] = server_optimizer.param_groups[0]['lr']
+
 
 def aggregate_client_model_params():
     num_clients = len(client_models)
@@ -224,7 +226,8 @@ while True:
             save_state_dict(client_models[0].state_dict(), model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
         full_acc = print_test_accuracy(num_instances=10000, quantized=False)
         stop_criteria = full_acc >= target_acc
-        print(f"LR  {server_scheduler.get_last_lr()[0]:.10f}")
+        print(f"Server LR  {server_scheduler.get_last_lr()[0]:.10f}")
+        print(f"Client LR  {client_schedulers[0].get_last_lr()[0]:.10f}")
 
         if stop_criteria:
             print(f"Accuracy {full_acc} reached")
