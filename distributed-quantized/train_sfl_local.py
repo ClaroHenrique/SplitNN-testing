@@ -212,6 +212,7 @@ else:
     target_acc = float(target_acc)
 
 epoch = 0
+interations_per_epoch = 50000 // client_batch_size + 1 #TODO: this number is hardcoded, only works for cifar10
 i = 0
 while True:
     i += 1
@@ -221,7 +222,7 @@ while True:
     train_client_server_models()
 
 
-    if auto_save_models and i % 400 == 0:
+    if i % interations_per_epoch == 0:
         if auto_save_models:
             save_state_dict(server_model.state_dict(), model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
             save_state_dict(client_models[0].state_dict(), model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
