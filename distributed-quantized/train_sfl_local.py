@@ -211,23 +211,26 @@ if target_acc == "":
 else:
     target_acc = float(target_acc)
 
+epoch = 0
 i = 0
 while True:
     i += 1
 
     # Training models
-    print(f"Training iteration {i}")
+    #print(f"Training iteration {i}")
     train_client_server_models()
 
 
-    if auto_save_models and i % 100 == 0:
+    if auto_save_models and i % 400 == 0:
         if auto_save_models:
             save_state_dict(server_model.state_dict(), model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
             save_state_dict(client_models[0].state_dict(), model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
         full_acc = print_test_accuracy(num_instances=10000, quantized=False)
         stop_criteria = full_acc >= target_acc
-        print(f"Server LR  {server_scheduler.get_last_lr()[0]:.10f}")
-        print(f"Client LR  {client_schedulers[0].get_last_lr()[0]:.10f}")
+        epoch += 1
+        print(f"Epoch: {epoch}")
+        print(f"Server LR  {server_optimizer.param_groups[0]['lr']:.10f}")
+        print(f"Client LR  {client_optimizers[0].param_groups[0]['lr']:.10f}")
 
         if stop_criteria:
             print(f"Accuracy {full_acc} reached")
