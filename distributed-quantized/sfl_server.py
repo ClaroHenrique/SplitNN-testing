@@ -273,11 +273,11 @@ if __name__ == '__main__':
     # Initializate server and clients model params
     if auto_load_models:
         # server model
-        load_model_if_exists(server_model, model_name, is_client=False, dataset_name=dataset_name)
+        load_model_if_exists(server_model, model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
         print("Server model loaded")
         # client model
         client_model = ClientModel(model_name, split_point=split_point)
-        load_model_if_exists(client_model, model_name, is_client=True, dataset_name=dataset_name)
+        load_model_if_exists(client_model, model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
         client_model_state_dict = client_model.state_dict()
         print("Client parameter SUM:", model_parameters_sum(client_model))
 

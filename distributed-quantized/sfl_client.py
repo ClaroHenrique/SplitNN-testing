@@ -84,17 +84,19 @@ def process_backward_query(grad):
 
 def process_test_inference_query(model, batch_size, msg):
     print("process_test_inference_query -", msg)
-    tracemalloc.start()
-    mem_first, _ = tracemalloc.get_traced_memory()
     time_start = time.time()
     measure = {}
     outputs = None
-    
+    inputs, labels = get_test_sample()
+
+    tracemalloc.start()
+    mem_first, _ = tracemalloc.get_traced_memory()
     with torch.no_grad():
-        inputs, labels = get_test_sample()
         outputs = model(inputs)
+
     measure["time-to-output"] = time.time() - time_start
     _, mem_peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
 
     outputs, labels = pickle.dumps(outputs), pickle.dumps(labels)
     #measure["mem-peak"] = mem_peak
