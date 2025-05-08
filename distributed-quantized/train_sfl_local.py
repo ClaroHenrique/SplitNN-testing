@@ -11,6 +11,7 @@ from model.models import ClientModel
 from model.models import ServerModel
 ####################################
 from optimizer.sgd import create_optimizer
+from model.quantization import generate_quantized_model
 from utils.utils import *
 
 import torch
@@ -173,7 +174,7 @@ def train_client_server_models():
     aggregate_client_model_params()
 
 
-def print_test_accuracy(num_instances, quantized=False):
+def print_test_accuracy(num_instances, model, quantized=False):
     correct = 0
     total = 0
     loss = 0
@@ -182,7 +183,7 @@ def print_test_accuracy(num_instances, quantized=False):
     while True:
         # TODO: use test dataset
         client_data_sample = next(test_iters[0])
-        tensor_IR = client_models[0](client_data_sample[0])
+        tensor_IR = model(client_data_sample[0])
         labels = client_data_sample[1]
 
         c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
@@ -205,6 +206,10 @@ def print_test_accuracy(num_instances, quantized=False):
 
 
 #####################################################################################
+client_model_quantized = generate_quantized_model(client_models[0], train_iters[0])
+print_test_accuracy(num_instances=10000, model=client_model, quantized=False)
+print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)
+
 target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
 
 epoch = 0
