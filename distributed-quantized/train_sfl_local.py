@@ -184,6 +184,8 @@ def print_test_accuracy(num_instances, model, quantized=False):
         # TODO: use test dataset
         client_data_sample = next(test_iters[0])
         tensor_IR = model(client_data_sample[0])
+        if quantized:
+            tensor_IR = tensor_IR.dequantize()
         labels = client_data_sample[1]
 
         c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
