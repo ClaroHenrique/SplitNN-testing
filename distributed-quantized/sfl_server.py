@@ -23,12 +23,14 @@ from torch.nn import functional as F
 load_dotenv()
 model_name = os.getenv("MODEL")
 dataset_name = os.getenv("DATASET")
+experiment_batches = int(os.getenv("EXPERIMENT_BATCHES"))
 learning_rate = float(os.getenv("LEARNING_RATE"))
 client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
 split_point = int(os.getenv("SPLIT_POINT"))
 auto_save_models = int(os.getenv("AUTO_SAVE_MODELS"))
 auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
 num_clients = len(os.getenv("CLIENT_ADDRESSES").split(","))
+
 loss_fn = nn.CrossEntropyLoss()
 global_request_id = 1
 
@@ -330,14 +332,14 @@ if __name__ == '__main__':
             generated_quantized = True
         elif op == '3':
             if generated_quantized:
-                print_test_accuracy(clients, num_instances=client_batch_size)
-                print_test_accuracy(clients, num_instances=client_batch_size, quantized=True)
+                print_test_accuracy(clients, num_instances=client_batch_size * experiment_batches)
+                print_test_accuracy(clients, num_instances=client_batch_size * experiment_batches, quantized=True)
             else:
                 print("Must quantize client model")
         elif op == '4':
             if generated_quantized:
-                print_test_accuracy(clients, num_instances=10000)
-                print_test_accuracy(clients, num_instances=10000, quantized=True) #TODO: adjust num_clients per dataset
+                print_test_accuracy(clients, num_instances=10000) #TODO: adjust num_instances per dataset
+                print_test_accuracy(clients, num_instances=10000, quantized=True)
             else:
                 print("Must quantize client model")
         elif op == '0':
