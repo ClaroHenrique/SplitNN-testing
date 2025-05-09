@@ -15,7 +15,6 @@ import torch.nn.functional as F
 
 class BasicBlock(nn.Module):
     expansion = 1
-
     def __init__(self, in_planes, planes, stride=1):
         super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(
@@ -79,20 +78,27 @@ class ResNet(nn.Module):
         self.split_point = split_point
         self.is_client = is_client
 
+        conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        bn1 = nn.BatchNorm2d(64)
+        layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
+        layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
+        layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
+        layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
+        linear = nn.Linear(512*block.expansion, num_classes)
+
         if self.is_layer_in_current_model(split_index=0):
-            self.conv1 = nn.Conv2d(3, 64, kernel_size=3,
-                                stride=1, padding=1, bias=False)
-            self.bn1 = nn.BatchNorm2d(64)
+            self.conv1 = conv1
+            self.bn1 = bn1
         if self.is_layer_in_current_model(split_index=1):
-            self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
+            self.layer1 = layer1
         if self.is_layer_in_current_model(split_index=2):
-            self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
+            self.layer2 = layer2
         if self.is_layer_in_current_model(split_index=3):
-            self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
+            self.layer3 = layer3
         if self.is_layer_in_current_model(split_index=4):
-            self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
+            self.layer4 = layer4
         if self.is_layer_in_current_model(split_index=5):
-            self.linear = nn.Linear(512*block.expansion, num_classes)
+            self.linear = linear
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
