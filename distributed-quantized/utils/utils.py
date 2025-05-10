@@ -38,9 +38,12 @@ def aggregate_measures_mean(measures):
     keys = list(measures[0].keys())
     n = len(measures)
     res = {}
+    print(f"Measures (count: {n}):")
     for k in keys:
+        print(f"{k}:")
         sum = 0
         for measure in measures:
+            print(f"{measure[k]}", end=", ")
             sum += measure[k]
         res[k] = sum / n
     return res
