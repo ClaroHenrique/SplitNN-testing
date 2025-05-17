@@ -39,6 +39,11 @@ class DistributedClientStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.Initialize = channel.unary_unary(
+                '/distributed_learning.DistributedClient/Initialize',
+                request_serializer=proto_dot_distributed__learning__pb2.Dictionary.SerializeToString,
+                response_deserializer=proto_dot_distributed__learning__pb2.Empty.FromString,
+                _registered_method=True)
         self.Forward = channel.unary_unary(
                 '/distributed_learning.DistributedClient/Forward',
                 request_serializer=proto_dot_distributed__learning__pb2.Query.SerializeToString,
@@ -78,6 +83,13 @@ class DistributedClientStub(object):
 
 class DistributedClientServicer(object):
     """Missing associated documentation comment in .proto file."""
+
+    def Initialize(self, request, context):
+        """Initialize client
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def Forward(self, request, context):
         """Training model
@@ -128,6 +140,11 @@ class DistributedClientServicer(object):
 
 def add_DistributedClientServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'Initialize': grpc.unary_unary_rpc_method_handler(
+                    servicer.Initialize,
+                    request_deserializer=proto_dot_distributed__learning__pb2.Dictionary.FromString,
+                    response_serializer=proto_dot_distributed__learning__pb2.Empty.SerializeToString,
+            ),
             'Forward': grpc.unary_unary_rpc_method_handler(
                     servicer.Forward,
                     request_deserializer=proto_dot_distributed__learning__pb2.Query.FromString,
@@ -173,6 +190,33 @@ def add_DistributedClientServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class DistributedClient(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def Initialize(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/distributed_learning.DistributedClient/Initialize',
+            proto_dot_distributed__learning__pb2.Dictionary.SerializeToString,
+            proto_dot_distributed__learning__pb2.Empty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Forward(request,

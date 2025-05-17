@@ -38,21 +38,22 @@ client_id = int(args.client_id)
 
 load_dotenv()
 
-model_name = os.getenv("MODEL")
-dataset_name = os.getenv("DATASET")
-image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
-batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
-split_point = int(os.getenv("SPLIT_POINT"))
-learning_rate = float(os.getenv("LEARNING_RATE"))
-num_clients = len(os.getenv("CLIENT_ADDRESSES").split(","))
-
+model_name = None # os.getenv("MODEL")
+dataset_name = None # os.getenv("DATASET")
+image_size = None # list(map(int, os.getenv("IMAGE_SIZE").split(",")))
+batch_size = None # int(os.getenv("CLIENT_BATCH_SIZE"))
+split_point = None # int(os.getenv("SPLIT_POINT"))
+learning_rate = None # float(os.getenv("LEARNING_RATE"))
+num_clients = None # len(os.getenv("CLIENT_ADDRESSES").split(","))
 
 client_quantized_model = None
-client_model = ClientModel(model_name, split_point=split_point)
+client_model = None
 
-train_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id,num_clients=num_clients, image_size = image_size)
-train_iter = itertools.cycle(train_data_loader)
-test_iter = itertools.cycle(test_data_loader)
+train_data_loader, test_data_loader = None, None
+train_iter = None
+test_iter = None
+
+optimizer = None
 
 def get_train_sample():
     return next(train_iter)
@@ -60,11 +61,30 @@ def get_train_sample():
 def get_test_sample():
     return next(test_iter)
 
+def inicialize(params_dict):
+    print("inicializate params_dict:", params_dict)
+    global model_name, dataset_name, image_size, batch_size, split_point, learning_rate, num_clients
+    global client_model, client_quantized_model, train_data_loader, test_data_loader, optimizer
+    global train_iter, test_iter
 
-loss_fn = nn.CrossEntropyLoss()
-optimizer, _ = create_optimizer(client_model.parameters(), learning_rate)
-last_output = None
-last_request_id = None
+    model_name = params_dict["model_name"]
+    dataset_name = params_dict["dataset_name"]
+    image_size = params_dict["image_size"]
+    batch_size = params_dict["batch_size"]
+    split_point = params_dict["split_point"]
+    learning_rate = params_dict["learning_rate"] # not really used (changes every backward)
+    num_clients = params_dict["num_clients"]
+    
+    client_quantized_model = None
+    client_model = ClientModel(model_name, split_point=split_point)
+
+    train_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id, num_clients=num_clients, image_size = image_size)
+    train_iter = itertools.cycle(train_data_loader)
+    test_iter = itertools.cycle(test_data_loader)
+
+    optimizer, _ = create_optimizer(client_model.parameters(), learning_rate)
+    last_output = None
+    last_request_id = None
 
 def process_forward_query(batch_size, request_id): #TODO use batch_size
     global last_output
@@ -118,6 +138,12 @@ def process_test_inference_query(model, batch_size, msg):
 class DistributedClientService(pb2_grpc.DistributedClientServicer):
     def __init__(self, *args, **kwargs):
         pass
+
+    def Initialize(self, request, context):
+        print("Initialize context:", context)
+        params_dict = pickle.loads(request.dictionary)
+        inicialize(params_dict)
+        return pb2.Empty()
 
     def Forward(self, request, context):
         batch_size = request.batch_size

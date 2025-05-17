@@ -14,27 +14,29 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n proto/distributed_learning.proto\x12\x14\x64istributed_learning\"?\n\x05Query\x12\x12\n\nbatch_size\x18\x01 \x01(\x05\x12\x12\n\nrequest_id\x18\x02 \x01(\x05\x12\x0e\n\x06status\x18\x03 \x01(\x05\";\n\x06Tensor\x12\x0e\n\x06tensor\x18\x01 \x01(\x0c\x12\r\n\x05label\x18\x02 \x01(\x0c\x12\x12\n\nrequest_id\x18\x03 \x01(\x05\"\x1b\n\nModelState\x12\r\n\x05state\x18\x01 \x01(\x0c\"\x1a\n\x07Measure\x12\x0f\n\x07measure\x18\x01 \x01(\x0c\"q\n\x11TensorWithMeasure\x12,\n\x06tensor\x18\x01 \x01(\x0b\x32\x1c.distributed_learning.Tensor\x12.\n\x07measure\x18\x02 \x01(\x0b\x32\x1d.distributed_learning.Measure\"S\n\x0cTensorWithLR\x12,\n\x06tensor\x18\x01 \x01(\x0b\x32\x1c.distributed_learning.Tensor\x12\x15\n\rlearning_rate\x18\x02 \x01(\x02\"\x07\n\x05\x45mpty2\xdf\x04\n\x11\x44istributedClient\x12\x46\n\x07\x46orward\x12\x1b.distributed_learning.Query\x1a\x1c.distributed_learning.Tensor\"\x00\x12M\n\x08\x42\x61\x63kward\x12\".distributed_learning.TensorWithLR\x1a\x1b.distributed_learning.Query\"\x00\x12P\n\rGetModelState\x12\x1b.distributed_learning.Empty\x1a .distributed_learning.ModelState\"\x00\x12P\n\rSetModelState\x12 .distributed_learning.ModelState\x1a\x1b.distributed_learning.Empty\"\x00\x12T\n\x16GenerateQuantizedModel\x12\x1b.distributed_learning.Empty\x1a\x1b.distributed_learning.Empty\"\x00\x12W\n\rTestInference\x12\x1b.distributed_learning.Query\x1a\'.distributed_learning.TensorWithMeasure\"\x00\x12`\n\x16TestQuantizedInference\x12\x1b.distributed_learning.Query\x1a\'.distributed_learning.TensorWithMeasure\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n proto/distributed_learning.proto\x12\x14\x64istributed_learning\" \n\nDictionary\x12\x12\n\ndictionary\x18\x01 \x01(\x0c\"?\n\x05Query\x12\x12\n\nbatch_size\x18\x01 \x01(\x05\x12\x12\n\nrequest_id\x18\x02 \x01(\x05\x12\x0e\n\x06status\x18\x03 \x01(\x05\";\n\x06Tensor\x12\x0e\n\x06tensor\x18\x01 \x01(\x0c\x12\r\n\x05label\x18\x02 \x01(\x0c\x12\x12\n\nrequest_id\x18\x03 \x01(\x05\"\x1b\n\nModelState\x12\r\n\x05state\x18\x01 \x01(\x0c\"\x1a\n\x07Measure\x12\x0f\n\x07measure\x18\x01 \x01(\x0c\"q\n\x11TensorWithMeasure\x12,\n\x06tensor\x18\x01 \x01(\x0b\x32\x1c.distributed_learning.Tensor\x12.\n\x07measure\x18\x02 \x01(\x0b\x32\x1d.distributed_learning.Measure\"S\n\x0cTensorWithLR\x12,\n\x06tensor\x18\x01 \x01(\x0b\x32\x1c.distributed_learning.Tensor\x12\x15\n\rlearning_rate\x18\x02 \x01(\x02\"\x07\n\x05\x45mpty2\xae\x05\n\x11\x44istributedClient\x12M\n\nInitialize\x12 .distributed_learning.Dictionary\x1a\x1b.distributed_learning.Empty\"\x00\x12\x46\n\x07\x46orward\x12\x1b.distributed_learning.Query\x1a\x1c.distributed_learning.Tensor\"\x00\x12M\n\x08\x42\x61\x63kward\x12\".distributed_learning.TensorWithLR\x1a\x1b.distributed_learning.Query\"\x00\x12P\n\rGetModelState\x12\x1b.distributed_learning.Empty\x1a .distributed_learning.ModelState\"\x00\x12P\n\rSetModelState\x12 .distributed_learning.ModelState\x1a\x1b.distributed_learning.Empty\"\x00\x12T\n\x16GenerateQuantizedModel\x12\x1b.distributed_learning.Empty\x1a\x1b.distributed_learning.Empty\"\x00\x12W\n\rTestInference\x12\x1b.distributed_learning.Query\x1a\'.distributed_learning.TensorWithMeasure\"\x00\x12`\n\x16TestQuantizedInference\x12\x1b.distributed_learning.Query\x1a\'.distributed_learning.TensorWithMeasure\"\x00\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'proto.distributed_learning_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_QUERY']._serialized_start=58
-  _globals['_QUERY']._serialized_end=121
-  _globals['_TENSOR']._serialized_start=123
-  _globals['_TENSOR']._serialized_end=182
-  _globals['_MODELSTATE']._serialized_start=184
-  _globals['_MODELSTATE']._serialized_end=211
-  _globals['_MEASURE']._serialized_start=213
-  _globals['_MEASURE']._serialized_end=239
-  _globals['_TENSORWITHMEASURE']._serialized_start=241
-  _globals['_TENSORWITHMEASURE']._serialized_end=354
-  _globals['_TENSORWITHLR']._serialized_start=356
-  _globals['_TENSORWITHLR']._serialized_end=439
-  _globals['_EMPTY']._serialized_start=441
-  _globals['_EMPTY']._serialized_end=448
-  _globals['_DISTRIBUTEDCLIENT']._serialized_start=451
-  _globals['_DISTRIBUTEDCLIENT']._serialized_end=1058
+  _globals['_DICTIONARY']._serialized_start=58
+  _globals['_DICTIONARY']._serialized_end=90
+  _globals['_QUERY']._serialized_start=92
+  _globals['_QUERY']._serialized_end=155
+  _globals['_TENSOR']._serialized_start=157
+  _globals['_TENSOR']._serialized_end=216
+  _globals['_MODELSTATE']._serialized_start=218
+  _globals['_MODELSTATE']._serialized_end=245
+  _globals['_MEASURE']._serialized_start=247
+  _globals['_MEASURE']._serialized_end=273
+  _globals['_TENSORWITHMEASURE']._serialized_start=275
+  _globals['_TENSORWITHMEASURE']._serialized_end=388
+  _globals['_TENSORWITHLR']._serialized_start=390
+  _globals['_TENSORWITHLR']._serialized_end=473
+  _globals['_EMPTY']._serialized_start=475
+  _globals['_EMPTY']._serialized_end=482
+  _globals['_DISTRIBUTEDCLIENT']._serialized_start=485
+  _globals['_DISTRIBUTEDCLIENT']._serialized_end=1171
 # @@protoc_insertion_point(module_scope)

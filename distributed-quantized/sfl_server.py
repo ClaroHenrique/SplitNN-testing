@@ -23,6 +23,7 @@ from torch.nn import functional as F
 load_dotenv()
 model_name = os.getenv("MODEL")
 dataset_name = os.getenv("DATASET")
+image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
 experiment_batches = int(os.getenv("EXPERIMENT_BATCHES"))
 learning_rate = float(os.getenv("LEARNING_RATE"))
 client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
@@ -93,6 +94,19 @@ class DistributedClient(object):
         ]
         self.channel = grpc.insecure_channel(address, options)            # instantiate a channel
         self.stub = pb2_grpc.DistributedClientStub(self.channel) # bind the client and the server
+
+    def initialize(self):
+        params_dict = {
+            "model_name": model_name,
+            "dataset_name": dataset_name,
+            "image_size": image_size,
+            "batch_size": client_batch_size,
+            "split_point": split_point,
+            "learning_rate": learning_rate,
+            "num_clients": num_clients,
+        }
+        query = pb2.Dictionary(dictionary= pickle.dumps(params_dict))
+        return self.stub.Initialize(query)
 
     def forward(self, batch_size, request_id):
         query = pb2.Query(batch_size=batch_size, request_id=request_id, status=0)
@@ -227,6 +241,13 @@ def print_test_accuracy(clients, num_instances, quantized=False):
     print()
     return correct / total
 
+async def initialize_clients(clients):
+    async def call_client_initialize_async(client):
+        return client.initialize()
+    # initialize every client
+    init_tasks = [asyncio.create_task(call_client_initialize_async(client)) for client in clients]
+    await asyncio.gather(*init_tasks)
+
 async def set_client_model_params(clients, model_state):
     async def call_client_set_model_async(client, new_state_dict):
         return client.set_model_state(new_state_dict)
@@ -274,7 +295,8 @@ if __name__ == '__main__':
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
 
-    # Initializate server and clients model params
+    asyncio.run(initialize_clients(clients))
+    # Initialize server and clients model params
     if auto_load_models:
         # server model
         load_model_if_exists(server_model, model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)

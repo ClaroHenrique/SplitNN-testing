@@ -3,6 +3,9 @@ syntax = "proto3";
 package distributed_learning;
 
 service DistributedClient {
+  // Initialize client
+  rpc Initialize(Dictionary) returns (Empty) {}
+  
   // Training model
   rpc Forward(Query) returns (Tensor) {}
   rpc Backward(TensorWithLR) returns (Query) {}
@@ -17,6 +20,10 @@ service DistributedClient {
   // Test model precision
   rpc TestInference(Query) returns (TensorWithMeasure) {}
   rpc TestQuantizedInference(Query) returns (TensorWithMeasure) {}
+}
+
+message Dictionary {
+  bytes dictionary = 1;
 }
 
 message Query {
