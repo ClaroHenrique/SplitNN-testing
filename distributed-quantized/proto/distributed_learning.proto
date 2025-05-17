@@ -5,7 +5,7 @@ package distributed_learning;
 service DistributedClient {
   // Training model
   rpc Forward(Query) returns (Tensor) {}
-  rpc Backward(Tensor) returns (Query) {}
+  rpc Backward(TensorWithLR) returns (Query) {}
 
   // Aggregate model
   rpc GetModelState(Empty) returns (ModelState) {}
@@ -42,6 +42,11 @@ message Measure {
 message TensorWithMeasure {
   Tensor tensor = 1;
   Measure measure = 2;
+}
+
+message TensorWithLR {
+  Tensor tensor = 1;
+  float learning_rate = 2;
 }
 
 message Empty {}

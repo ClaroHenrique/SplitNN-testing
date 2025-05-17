@@ -5,8 +5,10 @@ import warnings
 
 from proto import distributed_learning_pb2 as proto_dot_distributed__learning__pb2
 
-GRPC_GENERATED_VERSION = '1.71.0'
+GRPC_GENERATED_VERSION = '1.65.5'
 GRPC_VERSION = grpc.__version__
+EXPECTED_ERROR_RELEASE = '1.66.0'
+SCHEDULED_RELEASE_DATE = 'August 6, 2024'
 _version_not_supported = False
 
 try:
@@ -16,12 +18,15 @@ except ImportError:
     _version_not_supported = True
 
 if _version_not_supported:
-    raise RuntimeError(
+    warnings.warn(
         f'The grpc package installed is at version {GRPC_VERSION},'
         + f' but the generated code in proto/distributed_learning_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
+        + f' This warning will become an error in {EXPECTED_ERROR_RELEASE},'
+        + f' scheduled for release on {SCHEDULED_RELEASE_DATE}.',
+        RuntimeWarning
     )
 
 
@@ -41,7 +46,7 @@ class DistributedClientStub(object):
                 _registered_method=True)
         self.Backward = channel.unary_unary(
                 '/distributed_learning.DistributedClient/Backward',
-                request_serializer=proto_dot_distributed__learning__pb2.Tensor.SerializeToString,
+                request_serializer=proto_dot_distributed__learning__pb2.TensorWithLR.SerializeToString,
                 response_deserializer=proto_dot_distributed__learning__pb2.Query.FromString,
                 _registered_method=True)
         self.GetModelState = channel.unary_unary(
@@ -130,7 +135,7 @@ def add_DistributedClientServicer_to_server(servicer, server):
             ),
             'Backward': grpc.unary_unary_rpc_method_handler(
                     servicer.Backward,
-                    request_deserializer=proto_dot_distributed__learning__pb2.Tensor.FromString,
+                    request_deserializer=proto_dot_distributed__learning__pb2.TensorWithLR.FromString,
                     response_serializer=proto_dot_distributed__learning__pb2.Query.SerializeToString,
             ),
             'GetModelState': grpc.unary_unary_rpc_method_handler(
@@ -211,7 +216,7 @@ class DistributedClient(object):
             request,
             target,
             '/distributed_learning.DistributedClient/Backward',
-            proto_dot_distributed__learning__pb2.Tensor.SerializeToString,
+            proto_dot_distributed__learning__pb2.TensorWithLR.SerializeToString,
             proto_dot_distributed__learning__pb2.Query.FromString,
             options,
             channel_credentials,

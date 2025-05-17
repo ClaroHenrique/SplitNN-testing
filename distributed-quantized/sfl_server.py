@@ -103,11 +103,12 @@ class DistributedClient(object):
         debug_print("IR", tensor_IR, labels)
         return tensor_IR, labels, request_id
 
-    def backward(self, grad, request_id): # TODO: implement request_id
+    def backward(self, grad, lr, request_id): # TODO: implement request_id
         debug_print("GRAD", grad)
         grad = pickle.dumps(grad)
         tensor = pb2.Tensor(tensor=grad, label=None, request_id=request_id)
-        return self.stub.Backward(tensor)
+        tensor_with_lr = pb2.TensorWithLR(tensor=tensor, learning_rate=lr)
+        return self.stub.Backward(tensor_with_lr)
     
     def get_model_state(self):
         query = pb2.Empty()
@@ -147,6 +148,7 @@ async def train_client_server_models(clients):
     clients_labels = []
     clients_request_ids = []
     num_clients = len(clients)
+    lr = scheduler.get_last_lr()[0]
     debug_print("Training models")
 
     async def call_client_forward_async(client, batch_size, request_id):
@@ -180,15 +182,15 @@ async def train_client_server_models(clients):
     debug_print(concat_IRs.sum())
 
     # Send IRs gradients back to the clients (train client model)
-    async def call_client_backward_async(client, grad, request_id):
-        return client.backward(grad=grad, request_id=req_id)
+    async def call_client_backward_async(client, grad, lr, request_id):
+        return client.backward(grad=grad, lr=lr, request_id=req_id)
     debug_print("Sending backward requests to clients")
     backward_tasks = []
     clients_IRs_grad = concat_IRs_grad.split(client_batch_size)
     for client, client_IR_grad, req_id in zip(clients, clients_IRs_grad, clients_request_ids):
         backward_tasks.append(
             asyncio.create_task(
-                call_client_backward_async(client, client_IR_grad, request_id=req_id))
+                call_client_backward_async(client, client_IR_grad, lr, request_id=req_id))
         )
     debug_print("Waiting for client backward tasks")
     await asyncio.gather(*backward_tasks)

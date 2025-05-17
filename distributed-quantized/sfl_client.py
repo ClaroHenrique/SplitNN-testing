@@ -6,6 +6,8 @@ import itertools
 import os
 import sys
 import tracemalloc
+import torch.profiler
+
 
 sys.path.append(os.path.abspath("proto"))
 import distributed_learning_pb2_grpc as pb2_grpc
@@ -60,7 +62,7 @@ def get_test_sample():
 
 
 loss_fn = nn.CrossEntropyLoss()
-optimizer, scheduler = create_optimizer(client_model.parameters(), learning_rate)
+optimizer, _ = create_optimizer(client_model.parameters(), learning_rate)
 last_output = None
 last_request_id = None
 
@@ -74,12 +76,12 @@ def process_forward_query(batch_size, request_id): #TODO use batch_size
     last_output = outputs
     return outputs, labels
 
-def process_backward_query(grad):
+def process_backward_query(grad, new_lr):
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = new_lr
     optimizer.zero_grad()
     last_output.backward(grad)
     optimizer.step()
-    #scheduler.step()
-    debug_print(scheduler.get_last_lr())
 
 
 def process_test_inference_query(model, batch_size, msg):
@@ -129,10 +131,12 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
 
     def Backward(self, request, context):
         print("Backward context:", context)
-        grad = pickle.loads(request.tensor)
-        request_id = request.request_id
-        process_backward_query(grad)
-        print("updating client model last_req", last_request_id, "current_req", request.request_id)
+        grad = pickle.loads(request.tensor.tensor)
+        new_lr = request.learning_rate
+        request_id = request.tensor.request_id
+
+        process_backward_query(grad, new_lr)
+        print("updating client model last_req", last_request_id, "current_req", request_id)
         return pb2.Query(batch_size=-1, request_id=request_id, status=1)
 
     def GetModelState(self, request, context):
