@@ -27,6 +27,7 @@ split_point = int(os.getenv("SPLIT_POINT"))
 auto_save_models = int(os.getenv("AUTO_SAVE_MODELS"))
 auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
 image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
+iterations_per_epoch = int(os.getenv("ITERATIONS_PER_EPOCH"))
 loss_fn = nn.CrossEntropyLoss()
 global_request_id = 1
 client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
@@ -215,7 +216,6 @@ print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized
 target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
 
 epoch = 0
-iterations_per_epoch = 50000 // (client_batch_size * num_clients) + 1 #TODO: this magic number is hardcoded, only works for cifar10
 i = 0
 while True:
     i += 1

@@ -27,6 +27,7 @@ image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
 experiment_batches = int(os.getenv("EXPERIMENT_BATCHES"))
 learning_rate = float(os.getenv("LEARNING_RATE"))
 client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
+iterations_per_epoch = int(os.getenv("ITERATIONS_PER_EPOCH"))
 split_point = int(os.getenv("SPLIT_POINT"))
 auto_save_models = int(os.getenv("AUTO_SAVE_MODELS"))
 auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
@@ -52,7 +53,6 @@ def server_forward(tensor_IR, labels):
     loss = loss_fn(outputs, labels)
     loss.backward()
     optimizer.step()
-    scheduler.step()
     debug_print("updating server model")
     debug_print(torch.unique(labels, return_counts=True))
     debug_print("LR", scheduler.get_last_lr())
@@ -339,7 +339,9 @@ if __name__ == '__main__':
                 # Estimate test dataset error
                 generate_quantized_models(clients)
                 
-                if auto_save_models and i % 10 == 0:
+                if auto_save_models and i % iterations_per_epoch == 0:
+                    scheduler.step()
+                    print("Current learning rate", scheduler.get_last_lr())
                     if auto_save_models:
                         save_state_dict(server_model.state_dict(), model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
                         save_state_dict(clients[0].get_model_state(), model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
