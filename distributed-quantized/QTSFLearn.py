@@ -259,8 +259,7 @@ while True:
     current_metrics = {}
     # Training models
     #print(f"Training iteration {i}")
-    client_full_iterations = 1
-    client_quant_iterations = 2
+    client_full_iterations , client_quant_iterations = 10, 20
     
     # Train server model and client models with full precision
     start_time = time.time()
@@ -296,6 +295,7 @@ while True:
     current_metrics["full_precision_time"] = full_precision_time
     current_metrics["quantized_time"] = quantized_time
     metrics_per_epoch[epoch] = current_metrics
+    print("Metrics:", metrics_per_epoch[epoch])
     
     if stop_criteria:
         print(f"Accuracy {full_acc} reached")
