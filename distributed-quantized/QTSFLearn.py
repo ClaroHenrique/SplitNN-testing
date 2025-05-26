@@ -275,8 +275,8 @@ while True:
     for _ in range(client_quant_iterations):
         start_time = time.time()
         train_client_server_models(use_quant_clients=True, train_clients=False)
-        print(f"Quantized training time: {time.time() - start_time:.2f} seconds")
     quantized_time = (time.time() - start_time) / client_quant_iterations
+    print(f"Quantized training time: {quantized_time:.2f} seconds")
 
     if auto_save_models:
         save_state_dict(server_model.state_dict(), model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
@@ -286,17 +286,20 @@ while True:
     print(f"Server LR  {server_optimizer.param_groups[0]['lr']:.10f}")
     print(f"Client LR  {client_optimizers[0].param_groups[0]['lr']:.10f}")
 
-    current_metrics["full_acc"] = full_acc
-    current_metrics["quant_acc"] = quant_acc
-    current_metrics["lr"] = server_optimizer.param_groups[0]['lr']
-    current_metrics["full_precision_time"] = full_precision_time
-    current_metrics["quantized_time"] = quantized_time
-    metrics_per_epoch[epoch] = current_metrics
-    print("Metrics:", metrics_per_epoch[epoch])
+    
     
     if iteration % iterations_per_epoch == 0:
         full_acc = print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
         quant_acc = print_test_accuracy(num_instances=10000, model=client_quantized_models[0], quantized=True)
+        
+        current_metrics["full_acc"] = full_acc
+        current_metrics["quant_acc"] = quant_acc
+        current_metrics["lr"] = server_optimizer.param_groups[0]['lr']
+        current_metrics["full_precision_time"] = full_precision_time
+        current_metrics["quantized_time"] = quantized_time
+        metrics_per_epoch[epoch] = current_metrics
+        print("Metrics:", metrics_per_epoch[epoch])
+        
         stop_criteria = full_acc >= target_acc
         if stop_criteria:
             print(f"Accuracy {full_acc} reached")
