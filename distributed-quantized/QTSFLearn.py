@@ -251,15 +251,16 @@ print_test_accuracy(num_instances=10000, model=client_quantized_models[0], quant
 
 target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
 metrics_per_epoch = {}
+client_full_iterations, client_quant_iterations = 10, 20
 
-epoch = 0
+iteration = 0
 while True:
-    epoch += 1
-    print(f"Epoch: {epoch}")
+    iteration += 1
+    print(f"Iteration: {iteration}")
+    epoch = iteration // iterations_per_epoch + 1
+    print("Epoch:", int(epoch))
+    
     current_metrics = {}
-    # Training models
-    #print(f"Training iteration {i}")
-    client_full_iterations , client_quant_iterations = 10, 20
     
     # Train server model and client models with full precision
     start_time = time.time()
@@ -281,11 +282,7 @@ while True:
         save_state_dict(server_model.state_dict(), model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
         save_state_dict(client_models[0].state_dict(), model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
     
-    full_acc = print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
-    quant_acc = print_test_accuracy(num_instances=10000, model=client_quantized_models[0], quantized=True)
     
-
-    stop_criteria = full_acc >= target_acc
     print(f"Server LR  {server_optimizer.param_groups[0]['lr']:.10f}")
     print(f"Client LR  {client_optimizers[0].param_groups[0]['lr']:.10f}")
 
@@ -297,9 +294,13 @@ while True:
     metrics_per_epoch[epoch] = current_metrics
     print("Metrics:", metrics_per_epoch[epoch])
     
-    if stop_criteria:
-        print(f"Accuracy {full_acc} reached")
-        break
+    if iteration % iterations_per_epoch == 0:
+        full_acc = print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
+        quant_acc = print_test_accuracy(num_instances=10000, model=client_quantized_models[0], quantized=True)
+        stop_criteria = full_acc >= target_acc
+        if stop_criteria:
+            print(f"Accuracy {full_acc} reached")
+            break
     
 for epoch, metrics in metrics_per_epoch.items():
     print(f"Epoch {epoch:03d}: {metrics}")
