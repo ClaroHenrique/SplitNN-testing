@@ -27,7 +27,7 @@ split_point = int(os.getenv("SPLIT_POINT"))
 auto_save_models = int(os.getenv("AUTO_SAVE_MODELS"))
 auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
 image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
-iterations_per_epoch = int(os.getenv("ITERATIONS_PER_EPOCH"))
+dataset_train_size = int(os.getenv("DATASET_TRAIN_SIZE"))
 loss_fn = nn.CrossEntropyLoss()
 global_request_id = 1
 client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
@@ -71,10 +71,6 @@ def server_forward(tensor_IR, labels):
     loss = loss_fn(outputs, labels)
     loss.backward()
     server_optimizer.step()
-    server_scheduler.step()
-    debug_print("updating server model")
-    debug_print(torch.unique(labels, return_counts=True))
-    debug_print("LR", server_scheduler.get_last_lr())
     return tensor_IR.grad.detach().to('cpu')
 
 def server_test_inference(tensor_IR, labels):
@@ -113,8 +109,6 @@ def client_process_backward_query(output, grad, client_id):
     output.backward(grad)
     client_optimizers[client_id].step()
     #set LR manually
-    for param_group in client_optimizers[client_id].param_groups:
-        param_group['lr'] = server_optimizer.param_groups[0]['lr']
 
 
 def aggregate_client_model_params():
@@ -185,9 +179,9 @@ def print_test_accuracy(num_instances, model, quantized=False):
         # TODO: use test dataset
         client_data_sample = next(test_iters[0])
         tensor_IR = model(client_data_sample[0])
+        labels = client_data_sample[1]
         if quantized:
             tensor_IR = tensor_IR.dequantize()
-        labels = client_data_sample[1]
 
         c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
         correct += c_correct
@@ -215,6 +209,7 @@ print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized
 
 target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
 
+iterations_per_epoch = dataset_train_size // (num_clients * client_batch_size)
 epoch = 0
 i = 0
 while True:
@@ -233,6 +228,11 @@ while True:
         stop_criteria = full_acc >= target_acc
         epoch += 1
         print(f"Epoch: {epoch}")
+        server_scheduler.step()
+        for client_optimizer in client_optimizers:
+            for param_group in client_optimizer.param_groups:
+                param_group['lr'] = server_optimizer.param_groups[0]['lr']
+
         print(f"Server LR  {server_optimizer.param_groups[0]['lr']:.10f}")
         print(f"Client LR  {client_optimizers[0].param_groups[0]['lr']:.10f}")
 
