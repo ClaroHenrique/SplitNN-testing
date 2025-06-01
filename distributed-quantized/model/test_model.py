@@ -46,16 +46,16 @@ class ResNet(nn.Module):
         layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
         linear = nn.Linear(512 * block.expansion, num_classes)
 
-        if self.is_layer_in_current_model(self, split_index=0):
+        if self.is_layer_in_current_model(split_index=0):
             self.conv1 = conv1
             self.bn1 = nn.BatchNorm2d(64)
-        if self.is_layer_in_current_model(self, split_index=1):
+        if self.is_layer_in_current_model(split_index=1):
             self.layer1 = layer1
-        if self.is_layer_in_current_model(self, split_index=2):
+        if self.is_layer_in_current_model(split_index=2):
             self.layer2 = layer2
-        if self.is_layer_in_current_model(self, split_index=3):
+        if self.is_layer_in_current_model(split_index=3):
             self.layer3 = layer3
-        if self.is_layer_in_current_model(self, split_index=4):
+        if self.is_layer_in_current_model(split_index=4):
             self.layer4 = layer4
             self.linear = linear
 
