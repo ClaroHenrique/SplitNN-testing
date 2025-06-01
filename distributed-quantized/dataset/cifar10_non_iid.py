@@ -24,6 +24,7 @@ class Cifar10_Train_NonIID_Dataset(Dataset):
             alpha = dirichlet_alpha,
             min_partition_size = 128,
             self_balancing = False,
+            shuffle = True,
             seed = random_state,
         )
         train_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True)

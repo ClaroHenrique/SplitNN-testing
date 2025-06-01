@@ -14,7 +14,7 @@ def get_data_loaders(batch_size, client_id, image_size):
         transforms.Resize(image_size), # Resize to 32x32
     ]) # 32x32
 
-    train_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform)
+    train_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform, shuffle=True)
     test_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform)
 
     # Create a data loader
