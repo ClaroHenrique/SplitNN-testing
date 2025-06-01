@@ -217,7 +217,9 @@ client_model_quantized = generate_quantized_model(client_models[0], train_iters[
 print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
 print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)
 
-target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
+
+#target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
+num_epochs = int(input("Set number of epochs (def: 200): ") or 200)
 
 iterations_per_epoch = dataset_train_size // (num_clients * client_batch_size)
 epoch = 0
@@ -235,7 +237,6 @@ while True:
             save_state_dict(server_model.state_dict(), model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
             save_state_dict(client_models[0].state_dict(), model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
         full_acc = print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
-        stop_criteria = full_acc >= target_acc
         epoch += 1
         print(f"Epoch: {epoch}")
 
@@ -247,6 +248,7 @@ while True:
         print(f"Server LR  {server_optimizer.param_groups[0]['lr']:.10f}")
         print(f"Client LR  {client_optimizers[0].param_groups[0]['lr']:.10f}")
 
+        stop_criteria = epoch >= num_epochs
         if stop_criteria:
             print(f"Accuracy {full_acc} reached")
             break
