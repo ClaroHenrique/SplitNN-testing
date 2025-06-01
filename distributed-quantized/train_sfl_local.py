@@ -50,7 +50,8 @@ import itertools
 
 train_test_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, num_clients=num_clients, image_size=image_size) for client_id in range(len(client_models))]
 train_iters = [itertools.cycle(train_data_loader) for train_data_loader, _ in train_test_data_loaders]
-test_iters = [itertools.cycle(test_data_loader) for _, test_data_loader in train_test_data_loaders]
+#test_iters = [itertools.cycle(test_data_loader) for _, test_data_loader in train_test_data_loaders]
+test_data_loader = train_test_data_loaders[0][1]  # Use the first client's test data loader for testing
 
 
 if auto_load_models:
@@ -177,22 +178,17 @@ def print_test_accuracy(num_instances, model, quantized=False):
     loss = 0
     all_measures = []
 
-    while True:
-        # TODO: use test dataset
-        client_data_sample = next(test_iters[0])
-        tensor_IR = model(client_data_sample[0])
-        labels = client_data_sample[1]
+    for batch_idx, (inputs, targets) in enumerate(test_data_loader):
+        inputs, labels = inputs.to(device), targets.to(device)
+        tensor_IR = model(inputs)
         if quantized:
             tensor_IR = tensor_IR.dequantize()
-
         c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
         correct += c_correct
         total += c_total
-        loss += c_loss.item() / 1 #len(client_models)
+        loss += c_loss.item()  # / len(client_models)
         # all_measures.append(measure) TODO: get measures from cliente
         # print(f"Accuracy progress {correct} / {total} = {correct / total}")
-        if total >= num_instances:
-            break
         
         
     (quantized and (print("== Quantized Metrics ==") or True)) or print("== Full Precision Metrics ==")
