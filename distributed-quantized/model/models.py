@@ -1,5 +1,6 @@
 from model.resnet import *
 from model.resnet_custom import *
+from model.test_model import *
 import torch
 
 
@@ -20,11 +21,14 @@ def get_model(name, split_point, is_client):
         model = ResNet101_custom(split_point=split_point, is_client=is_client)
     elif name == 'ResNet152_custom':
         model = ResNet152_custom(split_point=split_point, is_client=is_client)
+    elif name == 'test_model':
+        model = test_model(split_point=split_point, is_client=is_client)
     else:
         raise ValueError(f"Model {name} not supported.")
     
+
+    # If the server is running on a GPU, use it
     if torch.cuda.is_available() and not is_client:
-        # If the server is running on a GPU, use it
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
