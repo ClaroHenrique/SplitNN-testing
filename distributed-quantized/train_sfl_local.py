@@ -49,9 +49,19 @@ from dataset.datasets import get_data_loaders #TODO use test dataset ??
 import itertools
 
 train_test_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, num_clients=num_clients, image_size=image_size) for client_id in range(len(client_models))]
-train_iters = [itertools.cycle(train_data_loader) for train_data_loader, _ in train_test_data_loaders]
-#test_iters = [itertools.cycle(test_data_loader) for _, test_data_loader in train_test_data_loaders]
+train_data_loaders = [train_data_loader for train_data_loader, _ in train_test_data_loaders]
+train_iters = [iter(train_data_loader) for train_data_loader in train_data_loaders]
+# test_iters = [itertools.cycle(test_data_loader) for _, test_data_loader in train_test_data_loaders]
 test_data_loader = train_test_data_loaders[0][1]  # Use the first client's test data loader for testing
+
+
+def get_next_train_batch(client_id):
+    global train_iters
+    batch = next(train_iters[client_id], None)
+    if batch is None:
+        train_iters[client_id] = iter(train_data_loaders[client_id])
+        return next(train_iters[client_id])
+    return batch
 
 
 if auto_load_models:
@@ -101,7 +111,7 @@ def server_test_inference(tensor_IR, labels):
 
 def client_process_forward_query(batch_size, client_id): #TODO use batch_size
     client_optimizers[client_id].zero_grad()
-    inputs, labels = next(train_iters[client_id])
+    inputs, labels = get_next_train_batch(client_id)
     inputs = inputs.to(device)
     outputs = client_models[client_id](inputs)
     return outputs, labels
