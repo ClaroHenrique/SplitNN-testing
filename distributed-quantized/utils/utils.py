@@ -29,7 +29,7 @@ def load_model_if_exists(model, model_name, split_point, is_client, num_clients,
     else:
         model_name = f"{model_name}_s{split_point}_server_n{num_clients}"
     path = f"./model-state/{model_name}_{dataset_name}.pth"
-    print(f"os.path.exists(path): {os.path.exists(path)}")
+    print(f"os.path.exists({path}): {os.path.exists(path)}")
     if os.path.exists(path):
         print(f"Loading model: {model_name}_{dataset_name}")
         model.load_state_dict(torch.load(path, weights_only=True, map_location=torch.device('cpu')))
