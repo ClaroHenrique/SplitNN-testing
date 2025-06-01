@@ -72,12 +72,6 @@ def server_forward(tensor_IR, labels):
     loss.backward()
     server_optimizer.step()
     server_scheduler.step()
-    for client_optimizer in client_optimizers:
-        for param_group in client_optimizer.param_groups:
-            param_group['lr'] = server_optimizer.param_groups[0]['lr']
-
-    print(f"Server LR  {server_optimizer.param_groups[0]['lr']:.10f}")
-    print(f"Client LR  {client_optimizers[0].param_groups[0]['lr']:.10f}")
     return tensor_IR.grad.detach().to('cpu')
 
 def server_test_inference(tensor_IR, labels):
@@ -235,6 +229,13 @@ while True:
         stop_criteria = full_acc >= target_acc
         epoch += 1
         print(f"Epoch: {epoch}")
+
+        for client_optimizer in client_optimizers:
+            for param_group in client_optimizer.param_groups:
+                param_group['lr'] = server_optimizer.param_groups[0]['lr']
+
+            print(f"Server LR  {server_optimizer.param_groups[0]['lr']:.10f}")
+            print(f"Client LR  {client_optimizers[0].param_groups[0]['lr']:.10f}")
 
         if stop_criteria:
             print(f"Accuracy {full_acc} reached")
