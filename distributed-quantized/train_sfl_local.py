@@ -78,7 +78,6 @@ def server_forward(tensor_IR, labels):
 def server_test_inference(tensor_IR, labels):
     # update server model, returns grad of the input
     # used to continue the backpropagation in client_model
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     correct = 0
     total = 0
     loss = 0
@@ -179,7 +178,7 @@ def print_test_accuracy(num_instances, model, quantized=False):
     all_measures = []
 
     for batch_idx, (inputs, targets) in enumerate(test_data_loader):
-        inputs, labels = inputs.to(device), targets.to(device)
+        inputs, labels = inputs.to(device), targets
         tensor_IR = model(inputs)
         if quantized:
             tensor_IR = tensor_IR.dequantize()
