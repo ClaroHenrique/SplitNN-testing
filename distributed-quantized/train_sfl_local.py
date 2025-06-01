@@ -73,7 +73,7 @@ def server_forward(tensor_IR, labels):
     loss = loss_fn(outputs, labels)
     loss.backward()
     server_optimizer.step()
-    return tensor_IR.grad.detach().to('cpu')
+    return tensor_IR.grad.detach().to(device)
 
 def server_test_inference(tensor_IR, labels):
     # update server model, returns grad of the input
