@@ -73,15 +73,15 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         out = x
-        if self.is_layer_in_current_model(self, split_index=0):
+        if self.is_layer_in_current_model(split_index=0):
             out = torch.relu(self.bn1(self.conv1(out)))
-        if self.is_layer_in_current_model(self, split_index=1):
+        if self.is_layer_in_current_model(split_index=1):
             out = self.layer1(out)
-        if self.is_layer_in_current_model(self, split_index=2):
+        if self.is_layer_in_current_model(split_index=2):
             out = self.layer2(out)
-        if self.is_layer_in_current_model(self, split_index=3):
+        if self.is_layer_in_current_model(split_index=3):
             out = self.layer3(out)
-        if self.is_layer_in_current_model(self, split_index=4):
+        if self.is_layer_in_current_model(split_index=4):
             out = self.layer4(out)
             out = torch.nn.functional.avg_pool2d(out, 4)
             out = out.view(out.size(0), -1)
