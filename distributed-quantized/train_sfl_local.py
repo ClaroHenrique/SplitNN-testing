@@ -177,11 +177,14 @@ def print_test_accuracy(num_instances, model, quantized=False):
     loss = 0
     all_measures = []
 
-    for batch_idx, (inputs, targets) in enumerate(test_data_loader):
-        inputs, labels = inputs.to(device), targets
-        tensor_IR = model(inputs)
+    for batch_idx, (inputs, labels) in enumerate(test_data_loader):
         if quantized:
-            tensor_IR = tensor_IR.dequantize()
+            tensor_IR = model(inputs)
+            inputs = tensor_IR.dequantize()
+        else:
+            inputs = inputs.to(device)
+            tensor_IR = model(inputs)
+        
         c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
         correct += c_correct
         total += c_total
