@@ -55,12 +55,12 @@ def get_data_loaders(batch_size, client_id, num_clients, image_size):
         transforms.Resize(image_size), # Resize to 32x32
     ]) 
     
-    #TODO: Implement shuffle in IID partitioner
+    #TODO: Implement shuffle in IID partitioner (check if it is really needed)
     train_dataset = Cifar10_Train_IID_Dataset(client_id=client_id, num_clients=num_clients, transform=transform_train, shuffle=True)
     test_dataset = torchvision.datasets.CIFAR10(root='../data', train=False, download=True, transform=transform_test)
 
     # Create a data loader
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, drop_last=True) #TODO: arbitrary test bath_size
 
     return train_dataloader, test_dataloader

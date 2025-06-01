@@ -24,11 +24,11 @@ def get_data_loaders(batch_size, client_id, image_size):
         transforms.Resize(image_size),
     ]) 
 
-    train_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform_train, shuffle=True)
+    train_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform_train)
     test_dataset = torchvision.datasets.CIFAR10(root='../data', train=False, download=True, transform=transform_test)
 
     # Create a data loader
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, drop_last=True) #TODO: arbitrary test bath_size
 
     return train_dataloader, test_dataloader
