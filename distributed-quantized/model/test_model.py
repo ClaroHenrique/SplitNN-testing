@@ -38,6 +38,7 @@ class ResNet(nn.Module):
         super(ResNet, self).__init__()
         self.is_client = is_client
         self.split_point = split_point
+        self.in_planes = 64
         conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
         layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
         layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
@@ -46,7 +47,6 @@ class ResNet(nn.Module):
         linear = nn.Linear(512 * block.expansion, num_classes)
 
         if self.is_layer_in_current_model(self, split_index=0):
-            self.in_planes = 64
             self.conv1 = conv1
             self.bn1 = nn.BatchNorm2d(64)
         if self.is_layer_in_current_model(self, split_index=1):
