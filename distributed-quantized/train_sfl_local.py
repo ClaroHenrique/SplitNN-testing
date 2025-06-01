@@ -34,10 +34,11 @@ client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
 num_clients = len(client_addresses)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
 # Load model and optimizer
 # import resnet18
 server_model = ServerModel(model_name, split_point=split_point)
-client_models = [ClientModel(model_name, split_point=split_point) for _ in range(len(client_addresses))]
+client_models = [ClientModel(model_name, split_point=split_point).to(device) for _ in range(len(client_addresses))]
 server_optimizer, server_scheduler = create_optimizer(server_model.parameters(), learning_rate)
 
 client_optimizers_schedulers = [create_optimizer(client_model.parameters(), learning_rate) for client_model in client_models]
@@ -101,6 +102,7 @@ def server_test_inference(tensor_IR, labels):
 def client_process_forward_query(batch_size, client_id): #TODO use batch_size
     client_optimizers[client_id].zero_grad()
     inputs, labels = next(train_iters[client_id])
+    inputs = inputs.to(device)
     outputs = client_models[client_id](inputs)
     return outputs, labels
 
@@ -108,10 +110,10 @@ def client_process_backward_query(output, grad, client_id):
     client_optimizers[client_id].zero_grad()
     output.backward(grad)
     client_optimizers[client_id].step()
-    #set LR manually
 
 
 def aggregate_client_model_params():
+    return None # TODO: remove this when the aggregation is tested
     num_clients = len(client_models)
 
     client_model_states = [client_model.state_dict() for client_model in client_models]
