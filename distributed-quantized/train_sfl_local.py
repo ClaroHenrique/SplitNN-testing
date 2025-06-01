@@ -180,7 +180,7 @@ def print_test_accuracy(num_instances, model, quantized=False):
     for batch_idx, (inputs, labels) in enumerate(test_data_loader):
         if quantized:
             tensor_IR = model(inputs)
-            inputs = tensor_IR.dequantize()
+            tensor_IR = tensor_IR.dequantize()
         else:
             inputs = inputs.to(device)
             tensor_IR = model(inputs)
