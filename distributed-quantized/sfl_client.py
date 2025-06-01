@@ -56,6 +56,7 @@ test_iter = None
 optimizer = None
 
 def get_train_sample():
+    # TODO: REMOVE intertools.cycle. it does not shuffle the data between epochs
     return next(train_iter)
 
 def get_test_sample():
