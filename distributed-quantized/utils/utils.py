@@ -16,18 +16,18 @@ def model_parameters_sum(model):
 def size_of_model(model):
     return len(pickle.dumps(model.state_dict()))
 
-def save_state_dict(state_dict, model_name, split_point, is_client, num_clients, dataset_name):
+def save_state_dict(state_dict, model_name, quantization_type, split_point, is_client, num_clients, dataset_name):
     if is_client:
-        model_name = f"{model_name}_s{split_point}_client_n{num_clients}"
+        model_name = f"{model_name}_{quantization_type}_s{split_point}_client_n{num_clients}"
     else:
-        model_name = f"{model_name}_s{split_point}_server_n{num_clients}"
+        model_name = f"{model_name}_{quantization_type}_s{split_point}_server_n{num_clients}"
     torch.save(state_dict, f"./model-state/{model_name}_{dataset_name}.pth")
 
-def load_model_if_exists(model, model_name, split_point, is_client, num_clients, dataset_name):
+def load_model_if_exists(model, model_name, quantization_type, split_point, is_client, num_clients, dataset_name):
     if is_client:
-        model_name = f"{model_name}_s{split_point}_client_n{num_clients}"
+        model_name = f"{model_name}_{quantization_type}_s{split_point}_client_n{num_clients}"
     else:
-        model_name = f"{model_name}_s{split_point}_server_n{num_clients}"
+        model_name = f"{model_name}_{quantization_type}_s{split_point}_server_n{num_clients}"
     path = f"./model-state/{model_name}_{dataset_name}.pth"
     print(f"os.path.exists({path}): {os.path.exists(path)}")
     if os.path.exists(path):
@@ -40,10 +40,11 @@ def aggregate_measures_mean(measures):
     res = {}
     print(f"Measures (count: {n}):")
     for k in keys:
-        print(f"{k}:")
+        print(f"{k}", end="")
         sum = 0
         for measure in measures:
-            print(f"{measure[k]}", end=", ")
+            print(f", {measure[k]}", end="")
             sum += measure[k]
         res[k] = sum / n
+        print()
     return res
