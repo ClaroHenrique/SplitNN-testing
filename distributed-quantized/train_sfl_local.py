@@ -20,6 +20,10 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+
+from dataset.datasets import get_data_loaders #TODO use test dataset ??
+import itertools
+
 load_dotenv()
 model_name = os.getenv("MODEL")
 quantization_type = os.getenv("QUANTIZATION_TYPE")
@@ -35,21 +39,20 @@ loss_fn = nn.CrossEntropyLoss()
 global_request_id = 1
 client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
 num_clients = len(client_addresses)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device_client = "cpu"
+device_server = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # Load model and optimizer
 # import resnet18
-server_model = ServerModel(model_name, quantization_type, split_point=split_point, input_shape=None)
-client_models = [ClientModel(model_name, quantization_type, split_point=split_point, input_shape=image_size).to(device) for _ in range(len(client_addresses))]
+server_model = ServerModel(model_name, quantization_type, split_point=split_point, device=device_server, input_shape=None)
+client_models = [ClientModel(model_name, quantization_type, split_point=split_point, device= device_client, input_shape=image_size) for _ in range(len(client_addresses))]
 server_optimizer, server_scheduler = create_optimizer(server_model.parameters(), learning_rate)
 
 client_optimizers_schedulers = [create_optimizer(client_model.parameters(), learning_rate) for client_model in client_models]
 client_optimizers = [optimizer for optimizer, _ in client_optimizers_schedulers]
 client_schedulers = [scheduler for _, scheduler in client_optimizers_schedulers]
 
-from dataset.datasets import get_data_loaders #TODO use test dataset ??
-import itertools
 
 train_test_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, num_clients=num_clients, image_size=image_size) for client_id in range(len(client_models))]
 train_data_loaders = [train_data_loader for train_data_loader, _ in train_test_data_loaders]
@@ -96,7 +99,7 @@ def server_test_inference(tensor_IR, labels):
     loss = 0
     debug_print(torch.unique(labels, return_counts=True))
     with torch.no_grad():
-        tensor_IR = tensor_IR.to(device).detach()
+        tensor_IR = tensor_IR.to(device_server).detach()
         tensor_IR.requires_grad = False
         outputs = server_model(tensor_IR).to('cpu')
         loss = loss_fn(outputs, labels)
@@ -115,7 +118,7 @@ def server_test_inference(tensor_IR, labels):
 def client_process_forward_query(batch_size, client_id): #TODO use batch_size
     client_optimizers[client_id].zero_grad()
     inputs, labels = get_next_train_batch(client_id)
-    inputs = inputs.to(device)
+    inputs = inputs.to(device_client)
     outputs = client_models[client_id](inputs)
     return outputs, labels
 
