@@ -80,7 +80,7 @@ def inicialize(params_dict):
     client_model = ClientModel(model_name, split_point=split_point)
 
     train_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id, num_clients=num_clients, image_size = image_size)
-    train_iter = itertools.cycle(train_data_loader)
+    train_iter = itertools.cycle(train_data_loader) # TODO: REMOVER itertools.cycle COLOCAR FUNCAO
     test_iter = itertools.cycle(test_data_loader)
 
     optimizer, _ = create_optimizer(client_model.parameters(), learning_rate)

@@ -1,10 +1,11 @@
 from model.resnet import *
 from model.resnet_custom import *
 from model.test_model import *
+from model.quantization import generate_prepared_model_qat
 import torch
 
 
-def get_model(name, split_point, is_client):
+def get_model(name, quantization_type, split_point, is_client, input_shape, state_dict):
     if name == 'resnet18':
         model = resnet18(split_point=split_point, is_client=is_client)
     elif name == 'resnet34':
@@ -26,6 +27,8 @@ def get_model(name, split_point, is_client):
     else:
         raise ValueError(f"Model {name} not supported.")
     
+    if state_dict is not None:
+        model.load_state_dict(state_dict)
 
     # If the server is running on a GPU, use it
     if torch.cuda.is_available() and not is_client:
@@ -33,14 +36,17 @@ def get_model(name, split_point, is_client):
     else:
         device = torch.device("cpu")
 
+    if is_client and quantization_type == 'qat':
+        model = generate_prepared_model_qat(model, input_shape)
+
     model.to(device)
     return model
 
-def ServerModel(name, split_point):
-    return get_model(name, split_point, is_client=False)
+def ServerModel(name, quantization_type, split_point, input_shape, state_dict=None):
+    return get_model(name, quantization_type, split_point, False, input_shape, state_dict=state_dict)
 
-def ClientModel(name, split_point):
-    return get_model(name, split_point, is_client=True)
+def ClientModel(name, quantization_type, split_point, input_shape, state_dict=None):
+    return get_model(name, quantization_type, split_point, True, input_shape, state_dict=state_dict)
 
 
 

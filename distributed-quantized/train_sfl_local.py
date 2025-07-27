@@ -2,9 +2,11 @@ from dotenv import load_dotenv
 import asyncio
 import os
 import sys
+# /SplitNN-testing/distributed-quantized/model-state/ResNet34_custom_s2_client_n8_cifar10_non_iid.pth
 
 sys.path.append(os.path.abspath("proto"))
 import pickle
+import copy
 
 ##### CUSTOMIZE MODEL AND DATA #####
 from model.models import ClientModel
@@ -20,6 +22,7 @@ from torch.nn import functional as F
 
 load_dotenv()
 model_name = os.getenv("MODEL")
+quantization_type = os.getenv("QUANTIZATION_TYPE")
 dataset_name = os.getenv("DATASET")
 learning_rate = float(os.getenv("LEARNING_RATE"))
 client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
@@ -37,8 +40,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load model and optimizer
 # import resnet18
-server_model = ServerModel(model_name, split_point=split_point)
-client_models = [ClientModel(model_name, split_point=split_point).to(device) for _ in range(len(client_addresses))]
+server_model = ServerModel(model_name, quantization_type, split_point=split_point, input_shape=None)
+client_models = [ClientModel(model_name, quantization_type, split_point=split_point, input_shape=image_size).to(device) for _ in range(len(client_addresses))]
 server_optimizer, server_scheduler = create_optimizer(server_model.parameters(), learning_rate)
 
 client_optimizers_schedulers = [create_optimizer(client_model.parameters(), learning_rate) for client_model in client_models]
@@ -66,11 +69,11 @@ def get_next_train_batch(client_id):
 
 if auto_load_models:
         # server model
-        load_model_if_exists(server_model, model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
+        load_model_if_exists(server_model, model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
         print("Server model loaded")
         # client model
         for client_model in client_models:
-            load_model_if_exists(client_model, model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
+            load_model_if_exists(client_model, model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
 
 
 def server_forward(tensor_IR, labels):
@@ -123,38 +126,25 @@ def client_process_backward_query(output, grad, client_id):
 
 
 def aggregate_client_model_params():
-    return None # TODO: remove this when the aggregation is tested
-    num_clients = len(client_models)
+    global_model = copy.deepcopy(client_models[0])
 
-    client_model_states = [client_model.state_dict() for client_model in client_models]
-    model_state_keys = client_model_states[0].keys()
-    client_model_weights = [list(model_state.values()) for model_state in client_model_states]
+    for name, param in global_model.named_parameters():
+        new_w = torch.zeros_like(param)
+        for c_model in client_models:
+            new_w += c_model.state_dict()[name]
+        new_w /= num_clients
+        global_model.state_dict()[name].copy_(new_w)
 
-    # aggregate parameters by mean
-    aggregated_params = []
-    for l, layer_key in enumerate(model_state_keys):
-        layer_params = []
-        #debug_print(layer_key, 'num_batches_tracked' in layer_key)
+    global_model_state = global_model.state_dict()
 
-        if 'num_batches_tracked' not in layer_key:
-            for client_w in client_model_weights:
-                layer_params.append(client_w[l])
-            layer_mean = torch.stack(layer_params, dim=0).mean(dim=0)
-        else:
-            layer_mean = client_model_weights[0][l].detach()
-        aggregated_params.append(layer_mean)
-    
-    # get aggregated weights from server
-    new_state_dict = dict(zip(model_state_keys, aggregated_params))
     for client_model in client_models:
-        client_model.load_state_dict(new_state_dict)
+        client_model.load_state_dict(global_model_state)
 
 def train_client_server_models():
     forward_tasks = []
     clients_IRs = []
     clients_labels = []
     clients_request_ids = []
-    num_clients = len(client_models)
     debug_print("Training models")
 
     debug_print("Waiting for client forward tasks")
@@ -213,9 +203,9 @@ def print_test_accuracy(num_instances, model, quantized=False):
 
 
 #####################################################################################
-client_model_quantized = generate_quantized_model(client_models[0], train_iters[0])
-print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
-print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)
+client_model_quantized = generate_quantized_model(client_models[0], train_iters[0], quantization_type=quantization_type)
+#print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
+#print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)
 
 
 #target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
@@ -228,7 +218,7 @@ while True:
     i += 1
 
     # Training models
-    #print(f"Training iteration {i}")
+    print(f"Training iteration {i}")
     train_client_server_models()
 
 
