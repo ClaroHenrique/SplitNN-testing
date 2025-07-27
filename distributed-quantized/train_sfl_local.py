@@ -153,7 +153,7 @@ def train_client_server_models():
     debug_print("Waiting for client forward tasks")
     for client_id in range(num_clients):
         tensor_IR, labels = client_process_forward_query(client_batch_size, client_id)
-        clients_IRs.append(tensor_IR.to(device_client))
+        clients_IRs.append(tensor_IR)
         clients_labels.append(labels)
 
     debug_print("Concat IRs and labels")
@@ -161,7 +161,7 @@ def train_client_server_models():
     concat_IRs = torch.concatenate(clients_IRs).detach()
     concat_labels = torch.concatenate(clients_labels).detach()
     debug_print("Feed server model with IRs")
-    concat_IRs_grad = server_forward(concat_IRs, concat_labels)
+    concat_IRs_grad = server_forward(concat_IRs, concat_labels).to(device_client)
     debug_print(concat_IRs.sum())
 
     debug_print("Sending backward requests to clients")
