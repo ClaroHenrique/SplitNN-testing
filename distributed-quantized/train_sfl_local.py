@@ -153,7 +153,7 @@ def train_client_server_models():
     debug_print("Waiting for client forward tasks")
     for client_id in range(num_clients):
         tensor_IR, labels = client_process_forward_query(client_batch_size, client_id)
-        clients_IRs.append(tensor_IR)
+        clients_IRs.append(tensor_IR.to(device_client))
         clients_labels.append(labels)
 
     debug_print("Concat IRs and labels")
