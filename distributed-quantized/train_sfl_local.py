@@ -82,14 +82,14 @@ if auto_load_models:
 def server_forward(tensor_IR, labels):
     # update server model, returns grad of the input 
     # used to continue the backpropagation in client_model
-    tensor_IR, labels = tensor_IR.to(device), labels.to(device)
+    tensor_IR, labels = tensor_IR.to(device_server), labels.to(device_server)
     tensor_IR.requires_grad = True
     server_optimizer.zero_grad()
     outputs = server_model(tensor_IR)
     loss = loss_fn(outputs, labels)
     loss.backward()
     server_optimizer.step()
-    return tensor_IR.grad.detach().to(device)
+    return tensor_IR.grad.detach().to(device_server)
 
 def server_test_inference(tensor_IR, labels):
     # update server model, returns grad of the input
@@ -185,7 +185,7 @@ def print_test_accuracy(num_instances, model, quantized=False):
             tensor_IR = model(inputs)
             tensor_IR = tensor_IR.dequantize()
         else:
-            inputs = inputs.to(device)
+            inputs = inputs.to(device_client)
             tensor_IR = model(inputs)
         
         c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
