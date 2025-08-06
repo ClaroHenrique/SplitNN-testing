@@ -7,6 +7,9 @@ import os
 import sys
 import tracemalloc
 import torch.profiler
+import gc
+from memory_profiler import memory_usage
+
 
 
 sys.path.append(os.path.abspath("proto"))
@@ -110,25 +113,30 @@ def process_test_inference_query(model, batch_size, msg):
     measure = {}
     outputs = None
     inputs, labels = get_test_sample()
+    # warmup
+    model.eval()
+    model(inputs)
+    gc.collect()
 
-    # measure memory
-    tracemalloc.start()
-    mem_first, _ = tracemalloc.get_traced_memory()
-    with torch.no_grad():
-        outputs = model(inputs)
-    _, mem_peak = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
+    # measure memory usage
+    init_mem = memory_usage(-1, interval=.01, timeout=1, max_usage=True)
+    mem_usage = memory_usage((model, (inputs,)), interval=0.01,
+                             include_children=True,
+                             max_usage=True,
+                             #timestamps=True
+                             )
+    mem_first = init_mem
+    mem_peak = mem_usage
 
     # measure time
     time_start = time.time()
-    with torch.no_grad():
-        outputs = model(inputs)
+    outputs = model(inputs)
     time_end = time.time()
 
     outputs, labels = pickle.dumps(outputs), pickle.dumps(labels)
-    #measure["mem-peak"] = mem_peak
-    #measure["mem-first"] = mem_first
-    measure["mem-usage"] = mem_peak - mem_first
+    #measure["mem-peak-mb"] = mem_peak
+    #measure["mem-first-mb"] = mem_first
+    measure["mem-usage-mb"] = mem_peak - mem_first
     measure["time"] = time_end - time_start
     measure["bandwidth"] = len(outputs) + len(labels)
     measure["model-size"] = size_of_model(model)
