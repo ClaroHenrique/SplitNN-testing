@@ -207,8 +207,8 @@ def print_test_accuracy(num_instances, model, quantized=False):
 
 #####################################################################################
 client_model_quantized = generate_quantized_model(client_models[0], train_iters[0], quantization_type=quantization_type)
-#print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
-#print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)
+print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
+print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)
 
 
 #target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
@@ -245,7 +245,10 @@ while True:
         if stop_criteria:
             print(f"Accuracy {full_acc} reached")
             break
-       
+
+
+print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
+print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)  
 
 
 # # send client_model weights to the server for aggregation
