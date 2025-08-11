@@ -22,6 +22,7 @@ from torch.nn import functional as F
 
 load_dotenv()
 model_name = os.getenv("MODEL")
+quantization_type = os.getenv("QUANTIZATION_TYPE")
 dataset_name = os.getenv("DATASET")
 image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
 experiment_batches = int(os.getenv("EXPERIMENT_BATCHES"))
@@ -32,21 +33,22 @@ split_point = int(os.getenv("SPLIT_POINT"))
 auto_save_models = int(os.getenv("AUTO_SAVE_MODELS"))
 auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
 num_clients = len(os.getenv("CLIENT_ADDRESSES").split(","))
+device_server = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device_client = "cpu" 
 
 loss_fn = nn.CrossEntropyLoss()
 global_request_id = 1
 
 
 # Load model and optimizer
-server_model = ServerModel(model_name, split_point=split_point)
+server_model = ServerModel(model_name, quantization_type, split_point=split_point, device=device_server, input_shape=None)
 optimizer, scheduler = create_optimizer(server_model.parameters(), learning_rate)
 
 
 def server_forward(tensor_IR, labels):
     # update server model, returns grad of the input 
     # used to continue the backpropagation in client_model
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    tensor_IR, labels = tensor_IR.to(device), labels.to(device)
+    tensor_IR, labels = tensor_IR.to(device_server), labels.to(device_server)
     tensor_IR.requires_grad = True
     optimizer.zero_grad()
     outputs = server_model(tensor_IR)
@@ -61,13 +63,12 @@ def server_forward(tensor_IR, labels):
 def server_test_inference(tensor_IR, labels):
     # update server model, returns grad of the input
     # used to continue the backpropagation in client_model
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     correct = 0
     total = 0
     loss = 0
     debug_print(torch.unique(labels, return_counts=True))
     with torch.no_grad():
-        tensor_IR = tensor_IR.to(device)
+        tensor_IR = tensor_IR.to(device_server)
         tensor_IR.requires_grad = False
         outputs = server_model(tensor_IR).to('cpu')
         loss = loss_fn(outputs, labels)
@@ -98,6 +99,7 @@ class DistributedClient(object):
     def initialize(self):
         params_dict = {
             "model_name": model_name,
+            "quantization_type": quantization_type,
             "dataset_name": dataset_name,
             "image_size": image_size,
             "batch_size": client_batch_size,
@@ -299,11 +301,11 @@ if __name__ == '__main__':
     # Initialize server and clients model params
     if auto_load_models:
         # server model
-        load_model_if_exists(server_model, model_name, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
+        load_model_if_exists(server_model, model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
         print("Server model loaded")
         # client model
-        client_model = ClientModel(model_name, split_point=split_point)
-        load_model_if_exists(client_model, model_name, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
+        client_model = ClientModel(model_name, quantization_type, split_point=split_point, device= device_client, input_shape=image_size)
+        load_model_if_exists(server_model, model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
         client_model_state_dict = client_model.state_dict()
         print("Client parameter SUM:", model_parameters_sum(client_model))
 

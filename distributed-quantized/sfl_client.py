@@ -42,12 +42,14 @@ client_id = int(args.client_id)
 load_dotenv()
 
 model_name = None # os.getenv("MODEL")
+quantization_type = None # os.getenv("QUANTIZATION_TYPE")
 dataset_name = None # os.getenv("DATASET")
 image_size = None # list(map(int, os.getenv("IMAGE_SIZE").split(",")))
 batch_size = None # int(os.getenv("CLIENT_BATCH_SIZE"))
 split_point = None # int(os.getenv("SPLIT_POINT"))
 learning_rate = None # float(os.getenv("LEARNING_RATE"))
 num_clients = None # len(os.getenv("CLIENT_ADDRESSES").split(","))
+device_client = "cpu"
 
 client_quantized_model = None
 client_model = None
@@ -67,20 +69,21 @@ def get_test_sample():
 
 def inicialize(params_dict):
     print("inicializate params_dict:", params_dict)
-    global model_name, dataset_name, image_size, batch_size, split_point, learning_rate, num_clients
+    global model_name, quantization_type, dataset_name, image_size, batch_size, split_point, learning_rate, num_clients
     global client_model, client_quantized_model, train_data_loader, test_data_loader, optimizer
     global train_iter, test_iter
 
     model_name = params_dict["model_name"]
+    quantization_type = params_dict["quantization_type"]
     dataset_name = params_dict["dataset_name"]
     image_size = params_dict["image_size"]
     batch_size = params_dict["batch_size"]
     split_point = params_dict["split_point"]
     learning_rate = params_dict["learning_rate"] # not really used (changes every backward)
     num_clients = params_dict["num_clients"]
-    
+
     client_quantized_model = None
-    client_model = ClientModel(model_name, split_point=split_point)
+    client_model = ClientModel(model_name, quantization_type, split_point=split_point, device= device_client, input_shape=image_size)
 
     train_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id, num_clients=num_clients, image_size = image_size)
     train_iter = itertools.cycle(train_data_loader) # TODO: REMOVER itertools.cycle COLOCAR FUNCAO
@@ -134,14 +137,14 @@ def process_test_inference_query(model, batch_size, msg):
     time_end = time.time()
 
     outputs, labels = pickle.dumps(outputs), pickle.dumps(labels)
-    #measure["mem-peak-mb"] = mem_peak
-    #measure["mem-first-mb"] = mem_first
+    measure["mem-peak-mb"] = mem_peak
+    measure["mem-first-mb"] = mem_first
     measure["mem-usage-mb"] = mem_peak - mem_first
     measure["time"] = time_end - time_start
     measure["bandwidth"] = len(outputs) + len(labels)
     measure["model-size"] = size_of_model(model)
     measure = pickle.dumps(measure)
-
+    print("process_test_inference_query - measure:", measure)
     return outputs, labels, measure
 
 class DistributedClientService(pb2_grpc.DistributedClientServicer):
@@ -189,7 +192,7 @@ class DistributedClientService(pb2_grpc.DistributedClientServicer):
     def GenerateQuantizedModel(self, request, context):
         global client_quantized_model
         #TODO: generate decent calib data loader    
-        client_quantized_model = generate_quantized_model(client_model, calib_dataloader=train_data_loader)
+        client_quantized_model = generate_quantized_model(client_model, calib_dataloader=train_data_loader, quantization_type=quantization_type)
         return pb2.Empty()
 
     def TestInference(self, request, context):
