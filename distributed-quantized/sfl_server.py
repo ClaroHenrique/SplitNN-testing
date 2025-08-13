@@ -7,8 +7,9 @@ sys.path.append(os.path.abspath("proto"))
 import grpc
 import distributed_learning_pb2_grpc as pb2_grpc
 import distributed_learning_pb2 as pb2
-import pickle
+import pickletools
 
+from config import experiment_configs
 ##### CUSTOMIZE MODEL AND DATA #####
 from model.models import ClientModel
 from model.models import ServerModel
@@ -96,17 +97,7 @@ class DistributedClient(object):
         self.channel = grpc.insecure_channel(address, options)            # instantiate a channel
         self.stub = pb2_grpc.DistributedClientStub(self.channel) # bind the client and the server
 
-    def initialize(self):
-        params_dict = {
-            "model_name": model_name,
-            "quantization_type": quantization_type,
-            "dataset_name": dataset_name,
-            "image_size": image_size,
-            "batch_size": client_batch_size,
-            "split_point": split_point,
-            "learning_rate": learning_rate,
-            "num_clients": num_clients,
-        }
+    def initialize(self, params_dict):
         query = pb2.Dictionary(dictionary= pickle.dumps(params_dict))
         return self.stub.Initialize(query)
 
@@ -243,9 +234,10 @@ def print_test_accuracy(clients, num_instances, quantized=False):
     print()
     return correct / total
 
-async def initialize_clients(clients):
+
+async def initialize_clients(clients, params_dict=None):
     async def call_client_initialize_async(client):
-        return client.initialize()
+        return client.initialize(params_dict)
     # initialize every client
     init_tasks = [asyncio.create_task(call_client_initialize_async(client)) for client in clients]
     await asyncio.gather(*init_tasks)
@@ -292,12 +284,70 @@ def generate_quantized_models(clients):
     for client in clients:
         client.generate_quantized_model()
 
+
+def collect_client_measures(clients, quantized=False):
+    all_measures = []
+    iterations = 0
+
+    while True:
+        client = clients[0]
+        if quantized:
+            tensor_IR, labels, measure = client.test_quantized_inference(batch_size=client_batch_size) #TODO fix batchsize
+        else:
+            tensor_IR, labels, measure = client.test_inference(batch_size=client_batch_size) #TODO fix batchsize
+        iterations += 1
+        all_measures.append(measure)
+        if iterations >= experiment_batches:
+            break
+        
+    if quantized:
+        print("== Quantized Metrics ==")
+    else:
+        print("== Full Precision Metrics ==")
+    result = aggregate_measures_mean(all_measures)
+    print(f"Measure mean: ", result)
+    print()
+    return result
+
+def run_all_experiment_configs_in_client():
+    for config in experiment_configs:
+        print("Running experiment with config:", config)
+        params_dict = {
+            "model_name": config["MODEL"],
+            "quantization_type": config["QUANTIZATION_TYPE"],
+            "dataset_name": config["DATASET"],
+            "image_size": config["IMAGE_SIZE"],
+            "batch_size": config["CLIENT_BATCH_SIZE"],
+            "split_point": config["SPLIT_POINT"],
+            "learning_rate": learning_rate,
+            "num_clients": num_clients,
+        }
+        # Initialize clients
+        asyncio.run(initialize_clients(clients, params_dict))
+        generate_quantized_models(clients)
+        result_full = collect_client_measures(clients, quantized=False)
+        result_quantized = collect_client_measures(clients, quantized=True)
+        print(f"Results for {config['MODEL']} with {config['QUANTIZATION_TYPE']} quantization on {config['DATASET']}:")
+        print(f"Full Precision: {result_full}")
+        print(f"Quantized: {result_quantized}")
+
+
 if __name__ == '__main__':
     message_max_size = int(os.getenv("MESSAGE_MAX_SIZE"))
     client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
     clients = [DistributedClient(address, message_max_size) for address in client_addresses]
 
-    asyncio.run(initialize_clients(clients))
+    client_params_dict = {
+        "model_name": model_name,
+        "quantization_type": quantization_type,
+        "dataset_name": dataset_name,
+        "image_size": image_size,
+        "batch_size": client_batch_size,
+        "split_point": split_point,
+        "learning_rate": learning_rate,
+        "num_clients": num_clients,
+    }
+    asyncio.run(initialize_clients(clients, client_params_dict))
     # Initialize server and clients model params
     if auto_load_models:
         # server model
@@ -320,6 +370,7 @@ if __name__ == '__main__':
         print("[2] - Quantize client model" + ((generated_quantized and ".") or (" (pendent)")))
         print("[3] - Show partial test dataset accuracy")
         print("[4] - Show full test dataset accuracy ")
+        print("[5] - Run all experiment configs")
         print("[0] - Sair")
         op = input()
         if op == "1":
@@ -370,6 +421,8 @@ if __name__ == '__main__':
                 print_test_accuracy(clients, num_instances=10000, quantized=True)
             else:
                 print("Must quantize client model")
+        elif op == '5':
+            run_all_experiment_configs_in_client()
         elif op == '0':
             break
         else:
