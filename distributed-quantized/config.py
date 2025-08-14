@@ -1,3 +1,8 @@
+num_clients = [
+    4,
+    8,
+]
+
 models = [
     "ResNet18_custom",
     "ResNet34_custom",
@@ -25,26 +30,27 @@ batch_sizes = [
 
 experiment_configs = []
 
-for model in models:
-    for quantization in quantization_type:
-        for split_point in split_points:
-            for dataset, image_size, train_size in datasets__image_size__train_size:
-                for batch_size in batch_sizes:
-                    experiment_configs.append({
-                        "MODEL": model,
-                        "QUANTIZATION_TYPE": quantization,
-                        "SPLIT_POINT": split_point,
-                        "DATASET": dataset,
-                        "IMAGE_SIZE": image_size,
-                        "DATASET_TRAIN_SIZE": train_size,
-                        "CLIENT_BATCH_SIZE": batch_size,
-                    })
+for num_client in num_clients:
+    for model in models:
+        for quantization in quantization_type:
+            for split_point in split_points:
+                for dataset, image_size, train_size in datasets__image_size__train_size:
+                    for batch_size in batch_sizes:
+                        experiment_configs.append({
+                            "NUM_CLIENTS": num_client,
+                            "MODEL_NAME": model,
+                            "QUANTIZATION_TYPE": quantization,
+                            "SPLIT_POINT": split_point,
+                            "DATASET_NAME": dataset,
+                            "IMAGE_SIZE": image_size,
+                            "DATASET_TRAIN_SIZE": train_size,
+                            "CLIENT_BATCH_SIZE": batch_size,
+                        })
 
-
-print("Experiment configurations:")
-for config in experiment_configs:
-    print(config)
-
+if __name__ == "__main__":
+    print("Available configurations:")
+    for config in experiment_configs:
+        print(config)
 
 
 

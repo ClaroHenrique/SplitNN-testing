@@ -15,6 +15,8 @@ from model.models import ServerModel
 from optimizer.sgd import create_optimizer
 from model.quantization import generate_quantized_model
 from utils.utils import *
+####################################
+from config import experiment_configs
 
 import torch
 from torch import nn
@@ -28,9 +30,9 @@ load_dotenv()
 model_name = os.getenv("MODEL")
 quantization_type = os.getenv("QUANTIZATION_TYPE")
 dataset_name = os.getenv("DATASET")
+split_point = int(os.getenv("SPLIT_POINT"))
 learning_rate = float(os.getenv("LEARNING_RATE"))
 client_batch_size = int(os.getenv("CLIENT_BATCH_SIZE"))
-split_point = int(os.getenv("SPLIT_POINT"))
 auto_save_models = int(os.getenv("AUTO_SAVE_MODELS"))
 auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
 image_size = list(map(int, os.getenv("IMAGE_SIZE").split(",")))
@@ -42,23 +44,63 @@ num_clients = len(client_addresses)
 device_client = "cpu"
 device_server = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
 # Load model and optimizer
 # import resnet18
-server_model = ServerModel(model_name, quantization_type, split_point=split_point, device=device_server, input_shape=None)
-client_models = [ClientModel(model_name, quantization_type, split_point=split_point, device= device_client, input_shape=image_size) for _ in range(len(client_addresses))]
-server_optimizer, server_scheduler = create_optimizer(server_model.parameters(), learning_rate)
+server_model = None
+client_models = None
+server_optimizer, server_scheduler = None, None
 
-client_optimizers_schedulers = [create_optimizer(client_model.parameters(), learning_rate) for client_model in client_models]
-client_optimizers = [optimizer for optimizer, _ in client_optimizers_schedulers]
-client_schedulers = [scheduler for _, scheduler in client_optimizers_schedulers]
+client_optimizers_schedulers = None
+client_optimizers = None
+client_schedulers = None
 
 
-train_test_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, num_clients=num_clients, image_size=image_size) for client_id in range(len(client_models))]
-train_data_loaders = [train_data_loader for train_data_loader, _ in train_test_data_loaders]
-train_iters = [iter(train_data_loader) for train_data_loader in train_data_loaders]
-# test_iters = [itertools.cycle(test_data_loader) for _, test_data_loader in train_test_data_loaders]
-test_data_loader = train_test_data_loaders[0][1]  # Use the first client's test data loader for testing
+train_test_data_loaders = None 
+train_data_loaders = None 
+train_iters = None 
+test_data_loader = None
+
+
+def load_model_and_data():
+    global server_model, client_models
+    global server_optimizer, server_scheduler
+    global client_optimizers, client_schedulers
+    global train_data_loaders, train_iters, test_data_loader
+
+    server_model = ServerModel(model_name, quantization_type, split_point=split_point, device=device_server, input_shape=None)
+    client_models = [ClientModel(model_name, quantization_type, split_point=split_point, device= device_client, input_shape=image_size) for _ in range(len(client_addresses))]
+    server_optimizer, server_scheduler = create_optimizer(server_model.parameters(), learning_rate)
+
+    client_optimizers_schedulers = [create_optimizer(client_model.parameters(), learning_rate) for client_model in client_models]
+    client_optimizers = [optimizer for optimizer, _ in client_optimizers_schedulers]
+    client_schedulers = [scheduler for _, scheduler in client_optimizers_schedulers]
+
+    train_test_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, num_clients=num_clients, image_size=image_size) for client_id in range(len(client_models))]
+    train_data_loaders = [train_data_loader for train_data_loader, _ in train_test_data_loaders]
+    train_iters = [iter(train_data_loader) for train_data_loader in train_data_loaders]
+    # test_iters = [itertools.cycle(test_data_loader) for _, test_data_loader in train_test_data_loaders]
+    test_data_loader = train_test_data_loaders[0][1]  # Use the first client's test data loader for testing
+
+load_model_and_data()
+
+def initialize_experiment_variables(experiment_config):
+    global num_clients
+    global model_name, quantization_type, split_point
+    global dataset_name, image_size, dataset_train_size
+    global client_batch_size
+
+    num_clients = experiment_config["NUM_CLIENTS"]
+    model_name = experiment_config["MODEL_NAME"]
+    quantization_type = experiment_config["QUANTIZATION_TYPE"]
+    split_point = experiment_config["SPLIT_POINT"]
+
+    dataset_name = experiment_config["DATASET_NAME"]
+    image_size = experiment_config["IMAGE_SIZE"]
+    dataset_train_size = experiment_config["DATASET_TRAIN_SIZE"]
+    client_batch_size = experiment_config["CLIENT_BATCH_SIZE"]
+
+    load_model_and_data()
+
 
 
 def get_next_train_batch(client_id):
@@ -181,12 +223,11 @@ def print_test_accuracy(num_instances, model, quantized=False):
     all_measures = []
 
     for batch_idx, (inputs, labels) in enumerate(test_data_loader):
+        tensor_IR = None
+        inputs = inputs.to(device_client)
+        tensor_IR = model(inputs)
         if quantized:
-            tensor_IR = model(inputs)
             tensor_IR = tensor_IR.dequantize()
-        else:
-            inputs = inputs.to(device_client)
-            tensor_IR = model(inputs)
         
         c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
         correct += c_correct
@@ -194,8 +235,7 @@ def print_test_accuracy(num_instances, model, quantized=False):
         loss += c_loss.item()  # / len(client_models)
         # all_measures.append(measure) TODO: get measures from cliente
         # print(f"Accuracy progress {correct} / {total} = {correct / total}")
-        
-        
+
     (quantized and (print("== Quantized Metrics ==") or True)) or print("== Full Precision Metrics ==")
     print(f"Accuracy: {correct} / {total} = {correct / total}")
     print(f"Loss: ", loss)
@@ -204,57 +244,68 @@ def print_test_accuracy(num_instances, model, quantized=False):
     return correct / total
 
 
-
 #####################################################################################
-client_model_quantized = generate_quantized_model(client_models[0], train_iters[0], quantization_type=quantization_type)
-print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
-print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)
+
+
+
+def run_experiments(num_epochs, experiment_config=None):
+    print("="*100)
+    if experiment_config:
+        print("Experiment configuration dict:", experiment_config)
+        initialize_experiment_variables(experiment_config)
+    print("Running experiments with the following configuration:")
+    print(f"Model: {model_name}, Quantization: {quantization_type}, Split Point: {split_point}")
+    print(f"Dataset: {dataset_name}, Image Size: {image_size}, Train Size: {dataset_train_size}")
+    print(f"Number of Clients: {num_clients}, Client Batch Size: {client_batch_size}")
+    
+    client_model_quantized = generate_quantized_model(client_models[0], train_iters[0], quantization_type=quantization_type)
+    print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
+    print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)
+
+    
+    iterations_per_epoch = dataset_train_size // (num_clients * client_batch_size)
+    epoch = 0
+    i = 0
+    while True:
+        i += 1
+
+        # Training models
+        print(f"Training iteration {i}")
+        train_client_server_models()
+
+        if i % iterations_per_epoch == 0:
+            if auto_save_models:
+                save_state_dict(server_model.state_dict(), model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
+                save_state_dict(client_models[0].state_dict(), model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
+            full_acc = print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
+            epoch += 1
+            print(f"Epoch: {epoch}")
+
+            server_scheduler.step()
+            for client_optimizer in client_optimizers:
+                for param_group in client_optimizer.param_groups:
+                    param_group['lr'] = server_optimizer.param_groups[0]['lr']
+
+            print(f"Server LR  {server_optimizer.param_groups[0]['lr']:.10f}")
+            print(f"Client LR  {client_optimizers[0].param_groups[0]['lr']:.10f}")
+
+            stop_criteria = epoch >= num_epochs
+            if stop_criteria:
+                print(f"Accuracy {full_acc} reached")
+                break
+
+    print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
+    print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)  
 
 
 #target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
 num_epochs = int(input("Set number of epochs (def: 200): ") or 200)
+op = input("Do you want to run all the experiments? (y/n): ").strip().lower()
 
-iterations_per_epoch = dataset_train_size // (num_clients * client_batch_size)
-epoch = 0
-i = 0
-while True:
-    i += 1
-
-    # Training models
-    print(f"Training iteration {i}")
-    train_client_server_models()
-
-
-    if i % iterations_per_epoch == 0:
-        if auto_save_models:
-            save_state_dict(server_model.state_dict(), model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
-            save_state_dict(client_models[0].state_dict(), model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
-        full_acc = print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
-        epoch += 1
-        print(f"Epoch: {epoch}")
-
-        server_scheduler.step()
-        for client_optimizer in client_optimizers:
-            for param_group in client_optimizer.param_groups:
-                param_group['lr'] = server_optimizer.param_groups[0]['lr']
-
-        print(f"Server LR  {server_optimizer.param_groups[0]['lr']:.10f}")
-        print(f"Client LR  {client_optimizers[0].param_groups[0]['lr']:.10f}")
-
-        stop_criteria = epoch >= num_epochs
-        if stop_criteria:
-            print(f"Accuracy {full_acc} reached")
-            break
-
-
-print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
-print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)  
-
-
-# # send client_model weights to the server for aggregation
-# client_model_state_dict = client_model.state_dict()
-# client_model_params = list(client_model_state_dict.values())
-
-# # get aggregated weights from server
-# new_state_dict = dict(zip(client_model_state_dict.keys(), aggregated_params))
-# client_model.load_state_dict(new_state_dict)
+if op == 'y':
+    for experiment_config in experiment_configs:
+        run_experiments(num_epochs, experiment_config=experiment_config)
+elif op == 'n':
+    run_experiments(num_epochs)
+else:
+    print("Invalid option")

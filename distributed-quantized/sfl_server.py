@@ -313,9 +313,9 @@ def run_all_experiment_configs_in_client():
     for config in experiment_configs:
         print("Running experiment with config:", config)
         params_dict = {
-            "model_name": config["MODEL"],
+            "model_name": config["MODEL_NAME"],
             "quantization_type": config["QUANTIZATION_TYPE"],
-            "dataset_name": config["DATASET"],
+            "dataset_name": config["DATASET_NAME"],
             "image_size": config["IMAGE_SIZE"],
             "batch_size": config["CLIENT_BATCH_SIZE"],
             "split_point": config["SPLIT_POINT"],
