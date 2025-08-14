@@ -248,7 +248,7 @@ def print_test_accuracy(num_instances, model, quantized=False):
 
 
 
-def run_experiments(num_epochs, experiment_config=None):
+def run_experiments(experiment_config=None):
     print("="*100)
     if experiment_config:
         print("Experiment configuration dict:", experiment_config)
@@ -262,6 +262,9 @@ def run_experiments(num_epochs, experiment_config=None):
     print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
     print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)
 
+
+    #target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
+    num_epochs = int(input("Set number of epochs (def: 200): ") or 200)
     
     iterations_per_epoch = dataset_train_size // (num_clients * client_batch_size)
     epoch = 0
@@ -297,15 +300,12 @@ def run_experiments(num_epochs, experiment_config=None):
     print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
     print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)  
 
-
-#target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
-num_epochs = int(input("Set number of epochs (def: 200): ") or 200)
 op = input("Do you want to run all the experiments? (y/n): ").strip().lower()
 
 if op == 'y':
     for experiment_config in experiment_configs:
-        run_experiments(num_epochs, experiment_config=experiment_config)
+        run_experiments(experiment_config=experiment_config)
 elif op == 'n':
-    run_experiments(num_epochs)
+    run_experiments()
 else:
     print("Invalid option")
