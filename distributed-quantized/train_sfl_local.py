@@ -285,7 +285,7 @@ def run_experiments(experiment_config=None):
     print(f"Dataset: {dataset_name}, Image Size: {image_size}, Train Size: {dataset_train_size}")
     print(f"Number of Clients: {num_clients}, Client Batch Size: {client_batch_size}")
     
-    #compare_full_and_quantized_model()
+    compare_full_and_quantized_model()
 
 
     #target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
