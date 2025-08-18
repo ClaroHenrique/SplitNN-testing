@@ -42,6 +42,7 @@ global_request_id = 1
 client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
 num_clients = len(client_addresses)
 device_client = "cpu"
+device_quantized = "cpu"
 device_server = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load model and optimizer
@@ -131,7 +132,7 @@ def server_forward(tensor_IR, labels):
     loss = loss_fn(outputs, labels)
     loss.backward()
     server_optimizer.step()
-    return tensor_IR.grad.detach().to(device_server)
+    return tensor_IR.grad.detach().to(device_server) #TODO: checar se não é device_client
 
 def server_test_inference(tensor_IR, labels):
     # update server model, returns grad of the input
@@ -165,7 +166,8 @@ def client_process_forward_query(batch_size, client_id): #TODO use batch_size
     return outputs, labels
 
 def client_process_backward_query(output, grad, client_id):
-    client_optimizers[client_id].zero_grad()
+    #client_optimizers[client_id].zero_grad()
+    # #TODO: ver isso aqui!!!!!!!!!!
     output.backward(grad)
     client_optimizers[client_id].step()
 
@@ -192,60 +194,85 @@ def train_client_server_models():
     clients_request_ids = []
     debug_print("Training models")
 
+    # Zero gradients
+    server_optimizer.zero_grad()
+    for client_id in range(num_clients):
+        client_optimizers[client_id].zero_grad()
+
+    # Forward pass for each client
     debug_print("Waiting for client forward tasks")
     for client_id in range(num_clients):
-        tensor_IR, labels = client_process_forward_query(client_batch_size, client_id)
+        client_optimizers[client_id].zero_grad()
+        inputs, labels = get_next_train_batch(client_id)
+        inputs = inputs.to(device_client)
+        tensor_IR = client_models[client_id](inputs)
+
         clients_IRs.append(tensor_IR)
         clients_labels.append(labels)
 
-    debug_print("Concat IRs and labels")
-    # Concat IR and labels to feed and train server model
-    concat_IRs = torch.concatenate(clients_IRs).detach()
-    concat_labels = torch.concatenate(clients_labels).detach()
-    debug_print("Feed server model with IRs")
-    concat_IRs_grad = server_forward(concat_IRs, concat_labels).to(device_client)
-    debug_print(concat_IRs.sum())
+    # Concatenate all client IRs and labels
+    concat_IRs = torch.concatenate(clients_IRs).detach().to(device_server)
+    concat_labels = torch.concatenate(clients_labels).detach().to(device_server)
 
-    debug_print("Sending backward requests to clients")
-    backward_tasks = []
+    # Forward pass on server
+    concat_IRs.requires_grad = True
+    outputs = server_model(concat_IRs)
+
+    # Backward pass on server
+    loss = loss_fn(outputs, concat_labels)
+    loss.backward()
+    server_optimizer.step()
+    
+    # Get gradients from server
+    concat_IRs_grad = concat_IRs.grad.detach().to(device_client)
     clients_IRs_grad = concat_IRs_grad.split(client_batch_size)
-    for client_id, client_IR, client_IR_grad in zip(range(len(client_models)), clients_IRs, clients_IRs_grad):
-        client_process_backward_query(client_IR, client_IR_grad, client_id)
+
+    for client_id, client_IR, client_IR_grad in zip(range(num_clients), clients_IRs, clients_IRs_grad):
+        client_IR.backward(client_IR_grad)
+        client_optimizers[client_id].step()
     
     debug_print("Aggregating client models")
     aggregate_client_model_params()
 
 
-def print_test_accuracy(num_instances, model, quantized=False):
+def print_test_accuracy(client_model, server_model, quantized=False):
     correct = 0
     total = 0
     loss = 0
     all_measures = []
 
-    for batch_idx, (inputs, labels) in enumerate(test_data_loader):
-        tensor_IR = None
-        inputs = inputs.to(device_client)
-        tensor_IR = model(inputs)
-        if quantized:
-            tensor_IR = tensor_IR.dequantize()
-        
-        c_correct, c_total, c_loss = server_test_inference(tensor_IR, labels)
-        correct += c_correct
-        total += c_total
-        loss += c_loss.item()  # / len(client_models)
-        # all_measures.append(measure) TODO: get measures from cliente
-        # print(f"Accuracy progress {correct} / {total} = {correct / total}")
+    with torch.no_grad():
+        for batch_idx, (inputs, labels) in enumerate(test_data_loader):
+            if quantized:
+                inputs = inputs.to('cpu')
+                tensor_IR = client_model(inputs)
+                tensor_IR = tensor_IR.dequantize()
+            else:
+                inputs = inputs.to(device_client)
+                tensor_IR = client_model(inputs)
 
-    (quantized and (print("== Quantized Metrics ==") or True)) or print("== Full Precision Metrics ==")
-    print(f"Accuracy: {correct} / {total} = {correct / total}")
-    print(f"Loss: ", loss)
-    #print(f"Measure mean: ", aggregate_measures_mean(all_measures))
-    print()
+            tensor_IR = tensor_IR.to(device_server).detach()
+            outputs = server_model(tensor_IR).to('cpu')
+            curr_loss = loss_fn(outputs, labels)
+            pred_class = torch.argmax(outputs, dim=1)
+
+            correct += torch.eq(labels, pred_class).sum().item()
+            total += len(labels)
+            loss += curr_loss.item()
+
+        (quantized and (print("== Quantized Metrics ==") or True)) or print("== Full Precision Metrics ==")
+        print(f"Accuracy: {correct} / {total} = {correct / total}")
+        print(f"Loss: ", loss)
+        print()
     return correct / total
 
 
 #####################################################################################
 
+def compare_full_and_quantized_model():
+    client_model_quantized = generate_quantized_model(client_models[0], train_iters[0], quantization_type=quantization_type)
+    print_test_accuracy(client_model=client_models[0], server_model=server_model, quantized=False)
+    print_test_accuracy(client_model=client_model_quantized, server_model=server_model, quantized=True)
 
 
 def run_experiments(experiment_config=None):
@@ -258,9 +285,7 @@ def run_experiments(experiment_config=None):
     print(f"Dataset: {dataset_name}, Image Size: {image_size}, Train Size: {dataset_train_size}")
     print(f"Number of Clients: {num_clients}, Client Batch Size: {client_batch_size}")
     
-    client_model_quantized = generate_quantized_model(client_models[0], train_iters[0], quantization_type=quantization_type)
-    print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
-    print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)
+    #compare_full_and_quantized_model()
 
 
     #target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
@@ -280,7 +305,7 @@ def run_experiments(experiment_config=None):
             if auto_save_models:
                 save_state_dict(server_model.state_dict(), model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
                 save_state_dict(client_models[0].state_dict(), model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
-            full_acc = print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
+            full_acc = print_test_accuracy(client_model=client_models[0], server_model=server_model, quantized=False)
             epoch += 1
             print(f"Epoch: {epoch}")
 
@@ -297,8 +322,7 @@ def run_experiments(experiment_config=None):
                 print(f"Accuracy {full_acc} reached")
                 break
 
-    print_test_accuracy(num_instances=10000, model=client_models[0], quantized=False)
-    print_test_accuracy(num_instances=10000, model=client_model_quantized, quantized=True)  
+    compare_full_and_quantized_model()
 
 op = input("Do you want to run all the experiments? (y/n): ").strip().lower()
 
