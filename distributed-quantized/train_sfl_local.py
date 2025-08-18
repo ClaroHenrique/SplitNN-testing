@@ -289,9 +289,10 @@ def run_experiments(experiment_config=None):
 
 
     #target_acc = float(input("Set target accuracy (def: 0.6): ") or 0.6)
+    iterations_per_epoch = dataset_train_size // (num_clients * client_batch_size)
+    print(f"Iterations per epoch: {iterations_per_epoch}")
     num_epochs = int(input("Set number of epochs (def: 200): ") or 200)
     
-    iterations_per_epoch = dataset_train_size // (num_clients * client_batch_size)
     epoch = 0
     i = 0
     while True:
