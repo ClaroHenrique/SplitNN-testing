@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 import asyncio
 import os
 import sys
-# /SplitNN-testing/distributed-quantized/model-state/ResNet34_custom_s2_client_n8_cifar10_non_iid.pth
 
 sys.path.append(os.path.abspath("proto"))
 import pickle
@@ -79,7 +78,6 @@ def load_model_and_data():
     train_test_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, num_clients=num_clients, image_size=image_size) for client_id in range(len(client_models))]
     train_data_loaders = [train_data_loader for train_data_loader, _ in train_test_data_loaders]
     train_iters = [iter(train_data_loader) for train_data_loader in train_data_loaders]
-    # test_iters = [itertools.cycle(test_data_loader) for _, test_data_loader in train_test_data_loaders]
     test_data_loader = train_test_data_loaders[0][1]  # Use the first client's test data loader for testing
 
 load_model_and_data()
@@ -271,8 +269,9 @@ def print_test_accuracy(client_model, server_model, quantized=False):
 
 def compare_full_and_quantized_model():
     client_model_quantized = generate_quantized_model(client_models[0], train_iters[0], quantization_type=quantization_type)
-    print_test_accuracy(client_model=client_models[0], server_model=server_model, quantized=False)
+    full_acc = print_test_accuracy(client_model=client_models[0], server_model=server_model, quantized=False)
     print_test_accuracy(client_model=client_model_quantized, server_model=server_model, quantized=True)
+    return full_acc
 
 
 def run_experiments(experiment_config=None):
@@ -306,7 +305,7 @@ def run_experiments(experiment_config=None):
             if auto_save_models:
                 save_state_dict(server_model.state_dict(), model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
                 save_state_dict(client_models[0].state_dict(), model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
-            full_acc = print_test_accuracy(client_model=client_models[0], server_model=server_model, quantized=False)
+            full_acc = compare_full_and_quantized_model() #print_test_accuracy(client_model=client_models[0], server_model=server_model, quantized=False)
             epoch += 1
             print(f"Epoch: {epoch}")
 
