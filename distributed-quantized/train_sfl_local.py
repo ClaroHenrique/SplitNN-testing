@@ -268,7 +268,7 @@ def print_test_accuracy(client_model, server_model, quantized=False):
 #####################################################################################
 
 def compare_full_and_quantized_model():
-    client_model_quantized = generate_quantized_model(client_models[0], train_iters[0], quantization_type=quantization_type)
+    client_model_quantized = generate_quantized_model(client_models[0], train_data_loaders[0], quantization_type=quantization_type)
     full_acc = print_test_accuracy(client_model=client_models[0], server_model=server_model, quantized=False)
     print_test_accuracy(client_model=client_model_quantized, server_model=server_model, quantized=True)
     return full_acc

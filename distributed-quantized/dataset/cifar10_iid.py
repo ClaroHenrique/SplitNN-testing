@@ -43,7 +43,7 @@ def get_data_loaders(batch_size, client_id, num_clients, image_size):
     # TODO: resize images
     transform_train = transforms.Compose([
         transforms.ToTensor(),
-        transforms.RandomCrop(32, padding=4),
+        #transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         transforms.Resize(image_size), # Resize to 32x32
