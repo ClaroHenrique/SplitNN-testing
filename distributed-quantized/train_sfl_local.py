@@ -55,7 +55,7 @@ client_optimizers = None
 client_schedulers = None
 
 
-train_test_data_loaders = None
+train_calib_test_data_loaders = None
 train_data_loaders = None
 train_iters = None
 calib_data_loaders = None
@@ -66,7 +66,7 @@ def load_model_and_data():
     global server_model, client_models
     global server_optimizer, server_scheduler
     global client_optimizers, client_schedulers
-    global train_data_loaders, train_iters, test_data_loader
+    global train_data_loaders, train_iters, calib_data_loaders, test_data_loader
 
     server_model = ServerModel(model_name, quantization_type, split_point=split_point, device=device_server, input_shape=None)
     client_models = [ClientModel(model_name, quantization_type, split_point=split_point, device= device_client, input_shape=image_size) for _ in range(len(client_addresses))]
@@ -77,10 +77,10 @@ def load_model_and_data():
     client_schedulers = [scheduler for _, scheduler in client_optimizers_schedulers]
 
     train_calib_test_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, num_clients=num_clients, image_size=image_size) for client_id in range(len(client_models))]
-    train_data_loaders = [train_data_loader for train_data_loader, _, _ in train_test_data_loaders]
-    calib_data_loaders = [calib_data_loader for _, calib_data_loader, _ in train_test_data_loaders]
+    train_data_loaders = [train_data_loader for train_data_loader, _, _ in train_calib_test_data_loaders]
+    calib_data_loaders = [calib_data_loader for _, calib_data_loader, _ in train_calib_test_data_loaders]
     train_iters = [iter(train_data_loader) for train_data_loader in train_data_loaders]
-    test_data_loader = train_test_data_loaders[0][2]  # Use the first client's test data loader for testing
+    test_data_loader = train_calib_test_data_loaders[0][2]  # Use the first client's test data loader for testing
 
 load_model_and_data()
 

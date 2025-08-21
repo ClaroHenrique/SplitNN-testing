@@ -42,24 +42,24 @@ class Cifar10_Train_IID_Dataset(Dataset):
 def get_data_loaders(batch_size, client_id, num_clients, image_size):
     # TODO: resize images
 
-    normalize_params = ((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    normalize_mean, normalize_std = (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
     transform_train = transforms.Compose([
         transforms.ToTensor(),
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
-        transforms.Normalize(normalize_params),
+        transforms.Normalize(normalize_mean, normalize_std),
         transforms.Resize(image_size), # Resize to 32x32
     ]) # 32x32
 
     transform_calib = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(normalize_params),
+        transforms.Normalize(normalize_mean, normalize_std),
         transforms.Resize(image_size), # Resize to 32x32
     ]) 
 
     transform_test = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(normalize_params),
+        transforms.Normalize(normalize_mean, normalize_std),
         transforms.Resize(image_size), # Resize to 32x32
     ]) 
     
