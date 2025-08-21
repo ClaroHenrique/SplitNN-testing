@@ -40,7 +40,7 @@ loss_fn = nn.CrossEntropyLoss()
 global_request_id = 1
 client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
 num_clients = len(client_addresses)
-device_client = "cpu"
+device_client = torch.device("cpu")
 device_quantized = "cpu"
 device_server = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -249,7 +249,8 @@ def print_test_accuracy(client_model, server_model, quantized=False):
                 inputs = inputs.to(device_client)
                 tensor_IR = client_model(inputs)
 
-            tensor_IR = tensor_IR.to(device_server).detach()
+            if device_client != device_server or quantized:
+                tensor_IR = tensor_IR.to(device_server)
             outputs = server_model(tensor_IR).to('cpu')
             curr_loss = loss_fn(outputs, labels)
             pred_class = torch.argmax(outputs, dim=1)
@@ -294,11 +295,12 @@ def run_experiments(experiment_config=None):
     
     epoch = 0
     i = 0
+    print("Starting training")
     while True:
         i += 1
 
         # Training models
-        print(f"Training iteration {i}")
+        print(f"Training iteration {i}", end="\r")
         train_client_server_models()
 
         if i % iterations_per_epoch == 0:
@@ -307,15 +309,21 @@ def run_experiments(experiment_config=None):
                 save_state_dict(client_models[0].state_dict(), model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
             full_acc = compare_full_and_quantized_model() #print_test_accuracy(client_model=client_models[0], server_model=server_model, quantized=False)
             epoch += 1
-            print(f"Epoch: {epoch}")
 
             server_scheduler.step()
-            for client_optimizer in client_optimizers:
-                for param_group in client_optimizer.param_groups:
-                    param_group['lr'] = server_optimizer.param_groups[0]['lr']
+            for client_scheduler in client_schedulers:
+                client_scheduler.step()
+
+            # Ensure lr from client equal to the server
+            # for client_optimizer in client_optimizers:
+            #     for param_group in client_optimizer.param_groups:
+            #         param_group['lr'] = server_optimizer.param_groups[0]['lr']
 
             print(f"Server LR  {server_optimizer.param_groups[0]['lr']:.10f}")
             print(f"Client LR  {client_optimizers[0].param_groups[0]['lr']:.10f}")
+
+            print(f"Epoch: {epoch}")
+            print()
 
             stop_criteria = epoch >= num_epochs
             if stop_criteria:
@@ -324,7 +332,8 @@ def run_experiments(experiment_config=None):
 
     compare_full_and_quantized_model()
 
-op = input("Do you want to run all the experiments? (y/n): ").strip().lower()
+#op = input("Do you want to run all the experiments? (y/n): ").strip().lower()
+op = 'n'
 
 if op == 'y':
     for experiment_config in experiment_configs:

@@ -43,6 +43,3 @@ def ServerModel(name, quantization_type, split_point, input_shape, device, state
 
 def ClientModel(name, quantization_type, split_point, input_shape, device, state_dict=None):
     return get_model(name, quantization_type, split_point, True, input_shape, device, state_dict=state_dict)
-
-
-
