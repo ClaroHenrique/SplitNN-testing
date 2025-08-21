@@ -40,7 +40,7 @@ loss_fn = nn.CrossEntropyLoss()
 global_request_id = 1
 client_addresses = os.getenv("CLIENT_ADDRESSES").split(",")
 num_clients = len(client_addresses)
-device_client = torch.device("cpu")
+device_client = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_quantized = "cpu"
 device_server = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -55,9 +55,10 @@ client_optimizers = None
 client_schedulers = None
 
 
-train_test_data_loaders = None 
-train_data_loaders = None 
-train_iters = None 
+train_test_data_loaders = None
+train_data_loaders = None
+train_iters = None
+calib_data_loaders = None
 test_data_loader = None
 
 
@@ -75,10 +76,11 @@ def load_model_and_data():
     client_optimizers = [optimizer for optimizer, _ in client_optimizers_schedulers]
     client_schedulers = [scheduler for _, scheduler in client_optimizers_schedulers]
 
-    train_test_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, num_clients=num_clients, image_size=image_size) for client_id in range(len(client_models))]
-    train_data_loaders = [train_data_loader for train_data_loader, _ in train_test_data_loaders]
+    train_calib_test_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, num_clients=num_clients, image_size=image_size) for client_id in range(len(client_models))]
+    train_data_loaders = [train_data_loader for train_data_loader, _, _ in train_test_data_loaders]
+    calib_data_loaders = [calib_data_loader for _, calib_data_loader, _ in train_test_data_loaders]
     train_iters = [iter(train_data_loader) for train_data_loader in train_data_loaders]
-    test_data_loader = train_test_data_loaders[0][1]  # Use the first client's test data loader for testing
+    test_data_loader = train_test_data_loaders[0][2]  # Use the first client's test data loader for testing
 
 load_model_and_data()
 
@@ -269,7 +271,7 @@ def print_test_accuracy(client_model, server_model, quantized=False):
 #####################################################################################
 
 def compare_full_and_quantized_model():
-    client_model_quantized = generate_quantized_model(client_models[0], train_data_loaders[0], quantization_type=quantization_type)
+    client_model_quantized = generate_quantized_model(client_models[0], calib_data_loaders[0], quantization_type=quantization_type)
     full_acc = print_test_accuracy(client_model=client_models[0], server_model=server_model, quantized=False)
     print_test_accuracy(client_model=client_model_quantized, server_model=server_model, quantized=True)
     return full_acc

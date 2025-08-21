@@ -41,27 +41,37 @@ class Cifar10_Train_IID_Dataset(Dataset):
 
 def get_data_loaders(batch_size, client_id, num_clients, image_size):
     # TODO: resize images
+
+    normalize_params = ((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
     transform_train = transforms.Compose([
         transforms.ToTensor(),
-        #transforms.RandomCrop(32, padding=4),
+        transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Normalize(normalize_params),
         transforms.Resize(image_size), # Resize to 32x32
     ]) # 32x32
 
+    transform_calib = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(normalize_params),
+        transforms.Resize(image_size), # Resize to 32x32
+    ]) 
+
     transform_test = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Normalize(normalize_params),
         transforms.Resize(image_size), # Resize to 32x32
     ]) 
     
-    #TODO: Implement shuffle in IID partitioner (check if it is really needed)
     train_dataset = Cifar10_Train_IID_Dataset(client_id=client_id, num_clients=num_clients, transform=transform_train)
+    # TODO: (calib from partitioned training without crop) Cifar10_Train_IID_Dataset(client_id=client_id, num_clients=num_clients, transform=transform_calib)
+    calib_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform_calib)
     test_dataset = torchvision.datasets.CIFAR10(root='../data', train=False, download=True, transform=transform_test)
     
     # Create a data loader
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, drop_last=False) #TODO: arbitrary test bath_size
+    calib_dataloader = DataLoader(calib_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, drop_last=False)
 
-    return train_dataloader, test_dataloader
+    return train_dataloader, calib_dataset, test_dataloader
 
