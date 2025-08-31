@@ -6,11 +6,11 @@ import torch
 
 
 def get_model(name, quantization_type, split_point, is_client, input_shape, device, state_dict):
-    if name == 'resnet18':
+    if name == 'ResNet18':
         model = resnet18(split_point=split_point, is_client=is_client)
-    elif name == 'resnet34':
+    elif name == 'ResNet34':
         model = resnet34(split_point=split_point, is_client=is_client)
-    elif name == 'resnet50':
+    elif name == 'ResNet50':
         model = resnet50(split_point=split_point, is_client=is_client)
     elif name == 'ResNet18_custom':
         model = ResNet18_custom(split_point=split_point, is_client=is_client)

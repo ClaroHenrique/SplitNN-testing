@@ -11,7 +11,6 @@ import gc
 from memory_profiler import memory_usage
 
 
-
 sys.path.append(os.path.abspath("proto"))
 import distributed_learning_pb2_grpc as pb2_grpc
 import distributed_learning_pb2 as pb2

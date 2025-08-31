@@ -15,6 +15,7 @@ def model_parameters_sum(model):
 
 def size_of_model(model):
     return len(pickle.dumps(model.state_dict()))
+    
 
 def save_state_dict(state_dict, model_name, quantization_type, split_point, is_client, num_clients, dataset_name):
     if is_client:
