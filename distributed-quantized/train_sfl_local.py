@@ -143,20 +143,21 @@ def print_test_accuracy(client_model, server_model, quantized=False):
 #### Train
 for i in range(epochs):
     print(f"Epoch {i}/{epochs}")
-    print("current accuracy, losss", test_accuracy_split(client_models[0], server_model))
-
+    #print("current accuracy, losss", test_accuracy_split(client_models[0], server_model))
     print()
+    server_model.train()
+    for client_model in client_models:
+        client_model.train()
     for _ in range(200): # epoch: 200 iterations
         server_optimizer.zero_grad()
-        for client_id in range(num_clients):
-            client_optimizers[client_id].zero_grad()
+        for client_optimizer in client_optimizers:
+            client_optimizer.zero_grad()
         outputs = []
         labels = []
         for client_id in range(num_clients):
             inputs, label = get_next_train_batch(client_id)
             IR = client_models[client_id](inputs.to(device_client))
             output = server_model(IR.to(device_server))
-
             outputs.append(output)
             labels.append(label)
 

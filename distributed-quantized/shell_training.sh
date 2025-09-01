@@ -1,7 +1,7 @@
 python train_sfl_local.py \
-    --model_name ResNet18 \
+    --model_name MobileNetV2 \
     --quantization_type ptq \
-    --dataset_name ImageNette \
+    --dataset_name Cifar10 \
     --split_point 1 \
     --num_clients 1 \
     --image_size 224 224 \

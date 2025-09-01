@@ -1,5 +1,5 @@
 # Adapted from: https://pytorch.org/vision/0.8/_modules/torchvision/models/resnet.html
-
+# Default resolution: 224x224
 import torch
 import torch.nn as nn
 
@@ -123,6 +123,8 @@ class ResNet(nn.Module):
                  groups=1, width_per_group=64, replace_stride_with_dilation=None,
                  norm_layer=None):
         super(ResNet, self).__init__()
+        if split_point == -1:
+            self.placeholder = nn.Linear(1,1)
 
         self.split_point = split_point
         self.is_client = is_client

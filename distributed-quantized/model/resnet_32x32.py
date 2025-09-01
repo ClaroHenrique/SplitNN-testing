@@ -1,11 +1,10 @@
 # Adapted from: https://pytorch.org/vision/0.8/_modules/torchvision/models/resnet.html
+# More appropriate ResNet for 32x32 images
 
 import torch
 import torch.nn as nn
 
-__all__ = ['ResNet18_custom', 'ResNet34_custom', 'ResNet50_custom', 'ResNet101_custom', 'ResNet152_custom']
-
-# More appropriate ResNet for 32x32 images
+__all__ = ['ResNet18_32x32', 'ResNet34_32x32', 'ResNet50_32x32', 'ResNet101_32x32', 'ResNet152_32x32']
 
 
 import torch
@@ -131,22 +130,22 @@ class ResNet(nn.Module):
 
 
 
-def ResNet18_custom(is_client, split_point=0):
+def ResNet18_32x32(is_client, split_point=0):
     return ResNet(BasicBlock, [2, 2, 2, 2], is_client=is_client, split_point=split_point,)
 
 
-def ResNet34_custom(is_client, split_point=0):
+def ResNet34_32x32(is_client, split_point=0):
     return ResNet(BasicBlock, [3, 4, 6, 3], is_client=is_client, split_point=split_point,)
 
 
-def ResNet50_custom(is_client, split_point=0):
+def ResNet50_32x32(is_client, split_point=0):
     return ResNet(Bottleneck, [3, 4, 6, 3], is_client=is_client, split_point=split_point,)
 
 
-def ResNet101_custom(is_client, split_point=0):
+def ResNet101_32x32(is_client, split_point=0):
     return ResNet(Bottleneck, [3, 4, 23, 3], is_client=is_client, split_point=split_point,)
 
 
-def ResNet152_custom(is_client, split_point=0):
+def ResNet152_32x32(is_client, split_point=0):
     return ResNet(Bottleneck, [3, 8, 36, 3], is_client=is_client, split_point=split_point,)
 

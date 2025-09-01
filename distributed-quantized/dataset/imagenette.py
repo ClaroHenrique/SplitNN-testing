@@ -8,9 +8,10 @@ import torchvision.transforms as transforms
 
 
 def get_data_loaders(batch_size, client_id, image_size):
+
     transform_train = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
+        transforms.RandomResizedCrop(image_size),
+        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
@@ -26,10 +27,10 @@ def get_data_loaders(batch_size, client_id, image_size):
     # ])
 
     transform_calib = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
+        transforms.Resize(int(image_size[0] * 1.14)),
+        transforms.CenterCrop(image_size),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
     # transforms.Compose([
     #     transforms.Resize(256),
@@ -40,10 +41,10 @@ def get_data_loaders(batch_size, client_id, image_size):
     # ])
 
     transform_test = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
+        transforms.Resize(int(image_size[0] * 1.14)),
+        transforms.CenterCrop(image_size),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
     
     train_dataset = torchvision.datasets.Imagenette(root='../data', split="train", download=True, transform=transform_train)

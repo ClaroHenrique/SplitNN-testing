@@ -1,5 +1,6 @@
 from model.resnet import *
-from model.resnet_custom import *
+from model.mobilenetv2 import *
+from model.resnet_32x32 import *
 from model.test_model import *
 from model.quantization import generate_prepared_model_qat
 import torch
@@ -12,16 +13,18 @@ def get_model(name, quantization_type, split_point, is_client, input_shape, devi
         model = resnet34(split_point=split_point, is_client=is_client)
     elif name == 'ResNet50':
         model = resnet50(split_point=split_point, is_client=is_client)
-    elif name == 'ResNet18_custom':
-        model = ResNet18_custom(split_point=split_point, is_client=is_client)
-    elif name == 'ResNet34_custom':
-        model = ResNet34_custom(split_point=split_point, is_client=is_client)
-    elif name == 'ResNet50_custom':
-        model = ResNet50_custom(split_point=split_point, is_client=is_client)
-    elif name == 'ResNet101_custom':
-        model = ResNet101_custom(split_point=split_point, is_client=is_client)
-    elif name == 'ResNet152_custom':
-        model = ResNet152_custom(split_point=split_point, is_client=is_client)
+    elif name == 'MobileNetV2':
+        model = MobileNetV2(split_point=split_point, is_client=is_client)
+    elif name == 'ResNet18_32x32':
+        model = ResNet18_32x32(split_point=split_point, is_client=is_client)
+    elif name == 'ResNet34_32x32':
+        model = ResNet34_32x32(split_point=split_point, is_client=is_client)
+    elif name == 'ResNet50_32x32':
+        model = ResNet50_32x32(split_point=split_point, is_client=is_client)
+    elif name == 'ResNet101_32x32':
+        model = ResNet101_32x32(split_point=split_point, is_client=is_client)
+    elif name == 'ResNet152_32x32':
+        model = ResNet152_32x32(split_point=split_point, is_client=is_client)
     elif name == 'test_model':
         model = test_model(split_point=split_point, is_client=is_client)
     else:
