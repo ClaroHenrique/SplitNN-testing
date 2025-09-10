@@ -12,7 +12,7 @@ from flwr_datasets.partitioner import DirichletPartitioner
 
 import numpy as np
 
-class Cifar100_Train_NonIID_Dataset(Dataset):
+class CIFAR100_Train_NonIID_Dataset(Dataset):
     def __init__(self, client_id, num_clients, dirichlet_alpha = 0.3, random_state=42, transform=None):
         # self.client_id = client_id
         # self.num_clients = num_clients
@@ -24,6 +24,7 @@ class Cifar100_Train_NonIID_Dataset(Dataset):
             alpha = dirichlet_alpha,
             min_partition_size = 128,
             self_balancing = False,
+            shuffle = True,
             seed = random_state,
         )
         train_dataset = torchvision.datasets.CIFAR100(root='../data', train=True, download=True)
@@ -45,27 +46,35 @@ class Cifar100_Train_NonIID_Dataset(Dataset):
 
 
 def get_data_loaders(batch_size, client_id, num_clients, image_size):
-    # TODO: resize images
+
     transform_train = transforms.Compose([
-        transforms.ToTensor(),
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        transforms.Resize(image_size), # Resize to 32x32
+        transforms.Resize(image_size),
     ]) # 32x32
+
+    transform_calib = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Resize(image_size),
+    ])
 
     transform_test = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        transforms.Resize(image_size), # Resize to 32x32
-    ]) 
-    
-    train_dataset = Cifar100_Train_NonIID_Dataset(client_id=client_id, num_clients=num_clients, transform=transform_train)
+        transforms.Resize(image_size),
+    ])
+
+    train_dataset = CIFAR100_Train_NonIID_Dataset(client_id=client_id, num_clients=num_clients, transform=transform_train)
+    calib_dataset = torchvision.datasets.CIFAR100(root='../data', train=True, download=True, transform=transform_calib)
     test_dataset = torchvision.datasets.CIFAR100(root='../data', train=False, download=True, transform=transform_test)
 
     # Create a data loader
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, drop_last=True) #TODO: arbitrary test bath_size
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
+    calib_dataloader = DataLoader(calib_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, drop_last=False)
 
-    return train_dataloader, test_dataloader
+    return train_dataloader, calib_dataloader, test_dataloader
 

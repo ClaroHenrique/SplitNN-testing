@@ -9,6 +9,7 @@ pip3 install torchvision
 pip3 install grpcio grpcio-tools
 pip3 install --upgrade google-api-python-client
 pip3 install flwr-datasets[vision]
+pip3 install kagglehub
 
 source .venv/bin/activate
 python3 sfl_client.py --client_id=0

@@ -31,7 +31,7 @@ def get_data_loaders(batch_size, client_id, image_size):
     # Create a data loader
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
     calib_dataloader = DataLoader(calib_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, drop_last=True) #TODO: arbitrary test bath_size
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, drop_last=False) #TODO: arbitrary test bath_size
 
     return train_dataloader, calib_dataloader, test_dataloader
 

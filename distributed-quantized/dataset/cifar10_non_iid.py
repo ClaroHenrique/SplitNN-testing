@@ -44,40 +44,38 @@ class Cifar10_Train_NonIID_Dataset(Dataset):
         return len(self.partition)
 
 
-def calculate_mean_std():
-    trainset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=50000, shuffle=False)
-    transform = transforms.Compose([transforms.ToTensor()])
-    dataiter = iter(trainloader)
-    images, _ = next(dataiter)
-    mean = images.mean((0, 2, 3))
-    std = images.std((0,2,3))
-    return mean, std
 
 
 def get_data_loaders(batch_size, client_id, num_clients, image_size):
-    normalize_mean, normalize_std = calculate_mean_std()
-    
+
     transform_train = transforms.Compose([
-        transforms.ToTensor(),
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
-        transforms.Normalize(normalize_mean, normalize_std),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Resize(image_size),
+    ]) # 32x32
+
+    transform_calib = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         transforms.Resize(image_size),
     ])
 
     transform_test = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(normalize_mean, normalize_std),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         transforms.Resize(image_size),
-    ]) 
-    
+    ])
+
     train_dataset = Cifar10_Train_NonIID_Dataset(client_id=client_id, num_clients=num_clients, transform=transform_train)
+    calib_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform_calib)
     test_dataset = torchvision.datasets.CIFAR10(root='../data', train=False, download=True, transform=transform_test)
 
     # Create a data loader
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, drop_last=True) #TODO: arbitrary test bath_size
+    calib_dataloader = DataLoader(calib_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, drop_last=False)
 
-    return train_dataloader, test_dataloader
+    return train_dataloader, calib_dataloader, test_dataloader
 
