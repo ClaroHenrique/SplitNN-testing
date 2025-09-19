@@ -84,7 +84,7 @@ def inicialize(params_dict):
     client_quantized_model = None
     client_model = ClientModel(model_name, quantization_type, split_point=split_point, device= device_client, input_shape=image_size)
 
-    train_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id, num_clients=num_clients, image_size = image_size)
+    train_data_loader, calib_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id, num_clients=num_clients, image_size = image_size)
     train_iter = itertools.cycle(train_data_loader) # TODO: REMOVER itertools.cycle COLOCAR FUNCAO
     test_iter = itertools.cycle(test_data_loader)
 
@@ -117,22 +117,28 @@ def process_test_inference_query(model, batch_size, msg):
     inputs, labels = get_test_sample()
     # warmup
     model.eval()
-    model(inputs)
-    gc.collect()
+    with torch.no_grad():
+        model(inputs)
 
     # measure memory usage
-    init_mem = memory_usage(-1, interval=.01, timeout=1, max_usage=True)
-    mem_usage = memory_usage((model, (inputs,)), interval=0.01,
-                             include_children=True,
-                             max_usage=True,
-                             #timestamps=True
-                             )
+    gc.collect()
+    init_mem = memory_usage(-1, interval=.001, timeout=1, max_usage=True)
+    
+    with torch.no_grad():
+        mem_usage = memory_usage(
+            (model, (inputs,)),
+            interval=0.01,
+            include_children=True,
+            max_usage=True,
+            #timestamps=True
+        )
     mem_first = init_mem
     mem_peak = mem_usage
 
     # measure time
     time_start = time.time()
-    outputs = model(inputs)
+    with torch.no_grad():
+        outputs = model(inputs)
     time_end = time.time()
 
     outputs, labels = pickle.dumps(outputs), pickle.dumps(labels)
@@ -144,6 +150,8 @@ def process_test_inference_query(model, batch_size, msg):
     measure["model-size"] = size_of_model(model)
     measure = pickle.dumps(measure)
     print("process_test_inference_query - measure:", measure)
+
+    gc.collect()
     return outputs, labels, measure
 
 class DistributedClientService(pb2_grpc.DistributedClientServicer):
