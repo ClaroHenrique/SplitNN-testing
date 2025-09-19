@@ -130,22 +130,22 @@ class ResNet(nn.Module):
 
 
 
-def ResNet18_32x32(is_client, split_point=0):
-    return ResNet(BasicBlock, [2, 2, 2, 2], is_client=is_client, split_point=split_point,)
+def ResNet18_32x32(num_classes, is_client, split_point=0):
+    return ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes, is_client=is_client, split_point=split_point,)
 
 
-def ResNet34_32x32(is_client, split_point=0):
-    return ResNet(BasicBlock, [3, 4, 6, 3], is_client=is_client, split_point=split_point,)
+def ResNet34_32x32(num_classes,is_client, split_point=0):
+    return ResNet(BasicBlock, [3, 4, 6, 3], num_classes=num_classes, is_client=is_client, split_point=split_point,)
 
 
-def ResNet50_32x32(is_client, split_point=0):
-    return ResNet(Bottleneck, [3, 4, 6, 3], is_client=is_client, split_point=split_point,)
+def ResNet50_32x32(num_classes,is_client, split_point=0):
+    return ResNet(Bottleneck, [3, 4, 6, 3], num_classes=num_classes, is_client=is_client, split_point=split_point,)
 
 
-def ResNet101_32x32(is_client, split_point=0):
-    return ResNet(Bottleneck, [3, 4, 23, 3], is_client=is_client, split_point=split_point,)
+def ResNet101_32x32(num_classes, is_client, split_point=0):
+    return ResNet(Bottleneck, [3, 4, 23, 3], num_classes=num_classes, is_client=is_client, split_point=split_point,)
 
 
-def ResNet152_32x32(is_client, split_point=0):
-    return ResNet(Bottleneck, [3, 8, 36, 3], is_client=is_client, split_point=split_point,)
+def ResNet152_32x32(num_classes, is_client, split_point=0):
+    return ResNet(Bottleneck, [3, 8, 36, 3], num_classes=num_classes, is_client=is_client, split_point=split_point,)
 

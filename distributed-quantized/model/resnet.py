@@ -249,11 +249,11 @@ class ResNet(nn.Module):
 
 
 
-def _resnet(arch, block, layers, pretrained, progress, is_client, split_point):
+def _resnet(arch, block, layers, num_classes, pretrained, progress, is_client, split_point):
     if is_client:
-        model = ResNet(block, layers, split_point, is_client=True, num_classes=10) 
+        model = ResNet(block, layers, split_point, is_client=True, num_classes=num_classes) 
     else:
-        model = ResNet(block, layers, split_point, is_client=False, num_classes=10)
+        model = ResNet(block, layers, split_point, is_client=False, num_classes=num_classes)
     # if pretrained:
     #     state_dict = load_state_dict_from_url(model_urls[arch],
     #                                           progress=progress)
@@ -261,17 +261,17 @@ def _resnet(arch, block, layers, pretrained, progress, is_client, split_point):
     return model
 
 
-def resnet18(is_client, split_point=0):
-    model = _resnet('resnet18', BasicBlock, [2, 2, 2, 2], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
+def resnet18(num_classes, is_client, split_point=0):
+    model = _resnet('resnet18', BasicBlock, [2, 2, 2, 2], num_classes=num_classes, is_client=is_client, split_point=split_point, pretrained=False, progress=True)
     model_name = 'resnet18_' + str(split_point)
     return model
 
-def resnet34(is_client, split_point=0):
-    model = _resnet('resnet34', BasicBlock, [3, 4, 6, 3], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
+def resnet34(num_classes, is_client, split_point=0):
+    model = _resnet('resnet34', BasicBlock, [3, 4, 6, 3], num_classes=num_classes, is_client=is_client, split_point=split_point, pretrained=False, progress=True)
     model_name = 'resnet34_' + str(split_point)
     return model
 
-def resnet50(is_client, split_point=0):
-    model = _resnet('resnet50', Bottleneck, [3, 4, 6, 3], is_client=is_client, split_point=split_point, pretrained=False, progress=True)
+def resnet50(num_classes, is_client, split_point=0):
+    model = _resnet('resnet50', Bottleneck, [3, 4, 6, 3], num_classes=num_classes, is_client=is_client, split_point=split_point, pretrained=False, progress=True)
     model_name = 'resnet50_' + str(split_point)
     return model

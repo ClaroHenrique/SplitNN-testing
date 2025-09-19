@@ -27,17 +27,22 @@ class XRay_Train_IID_Dataset(Dataset):
             num_partitions = num_clients,
         )
 
-        train_dataset = torchvision.datasets.ImageFolder(os.path.join(data_dir, 'chest_xray', 'train'), transform=transform)
-        dt_list = [{'img': f, 'label': l} for f,l in train_dataset]
-        partitioner.dataset = DT.from_list(dt_list)
+        self.train_dataset = torchvision.datasets.ImageFolder(os.path.join(data_dir, 'chest_xray', 'train'), transform=transform)
+        #train_dataset = datasets.load_dataset("imagefolder", data_dir=os.path.join(data_dir, 'chest_xray'))["train"]
+        dt_list = [{'real_index': i, 'label': l} for i, (_, l) in enumerate(self.train_dataset)]
+        #print(train_dataset)
 
+        partitioner.dataset = DT.from_list(dt_list)
         self.partition = partitioner.load_partition(partition_id=client_id)
 
     def __getitem__(self, index):
         batch = self.partition[index]
-        image, label = batch['img'], batch['label']
-        if self.transform:
-            image = self.transform(image)
+        real_index = batch["real_index"]
+        label = batch["label"]
+        #print("real index", real_index, index)
+
+        image = self.train_dataset[real_index][0]
+        label = torch.tensor(label)
         return image, label
 
     def __len__(self):

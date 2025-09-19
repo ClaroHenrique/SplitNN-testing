@@ -8,7 +8,7 @@ from torch.ao.quantization import quantize_fx
 from torch.ao.quantization import QConfigMapping
 from torch.ao.quantization import get_default_qat_qconfig_mapping
 
-def calibrate(model, dataloader, batch_limit=5):
+def calibrate(model, dataloader, batch_limit=10):
     for i, (x_batch, y_batch) in enumerate(dataloader):
         model(x_batch)
         if i >= batch_limit - 1:  # Limit accessed data based on batch_limit

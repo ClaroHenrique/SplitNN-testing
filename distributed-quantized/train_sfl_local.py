@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser(description='Script para treinamento e quantiza
 
 parser.add_argument('--model_name', type=str, required=True, help='Nome do modelo (ex: ResNet18, MobileNetV2)')
 parser.add_argument('--quantization_type', type=str, required=True, help='Tipo de quantização (ex: ptq, qat)')
+parser.add_argument('--optimizer_name', type=str, required=True, help='Nome do otimizador (ex: Adam, SGD)')
 parser.add_argument('--dataset_name', type=str, required=True, help='Nome do dataset (ex: imagenette, cifar10)')
 parser.add_argument('--split_point', type=int, required=True, help='Ponto de divisão para aprendizagem federada')
 parser.add_argument('--num_clients', type=int, required=True, help='Número de clientes na aprendizagem federada')
@@ -21,11 +22,14 @@ parser.add_argument('--image_size', type=int, nargs=2, required=True, help='Tama
 parser.add_argument('--client_batch_size', type=int, required=True, help='Tamanho do batch para o cliente')
 parser.add_argument('--learning_rate', type=float, required=True, help='Taxa de aprendizado')
 parser.add_argument('--epochs', type=int, required=True, help='Número de épocas de treinamento')
+parser.add_argument('--has_to_load_model', action='store_true', help='Carrega estado do modelo salvo anteriormente.')
+parser.add_argument('--inference_only', action='store_true', help='Realiza apenas a inferência, sem treino.')
 
 args = parser.parse_args()
 
 model_name = args.model_name
 quantization_type = args.quantization_type
+optimizer_name = args.optimizer_name
 dataset_name = args.dataset_name
 split_point = args.split_point
 num_clients = args.num_clients
@@ -33,6 +37,12 @@ image_size = tuple(args.image_size)
 client_batch_size = args.client_batch_size
 learning_rate = args.learning_rate
 epochs = args.epochs
+has_to_load_model = args.inference_only
+inference_only = args.inference_only
+results_file_name = "results_accuracy.csv"
+run_id = generate_run_id()
+print("inference_only", inference_only)
+
 
 device_client = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_server = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -41,6 +51,7 @@ loss_fn = nn.CrossEntropyLoss()
 #####################################################
 # Define Data
 from dataset.datasets import get_data_loaders
+print("Starting data loaders")
 train_calib_val_data_loaders = [get_data_loaders(dataset_name, batch_size=client_batch_size, client_id=client_id, num_clients=num_clients, image_size=image_size) for client_id in range(num_clients)]
 train_data_loaders = [train_data_loader for train_data_loader, _, _ in train_calib_val_data_loaders]
 calib_data_loaders = [calib_data_loader for _, calib_data_loader, _ in train_calib_val_data_loaders]
@@ -58,18 +69,24 @@ def get_next_train_batch(client_id):
 ## Define models
 from model.models import ClientModel
 from model.models import ServerModel
+from dataset.datasets import get_num_classes
+print("Starting models")
 
-init_server_model = ServerModel(model_name, quantization_type, split_point=split_point, device=device_server, input_shape=None)
-init_client_model = ClientModel(model_name, quantization_type, split_point=split_point, device= device_client, input_shape=image_size)
+num_classes = get_num_classes(dataset_name)
+init_server_model = ServerModel(model_name, num_classes, quantization_type, split_point=split_point, device=device_server, input_shape=None)
+init_client_model = ClientModel(model_name, num_classes, quantization_type, split_point=split_point, device= device_client, input_shape=image_size)
 
 client_models = [copy.deepcopy(init_client_model) for _ in range(num_clients)]
 server_model = copy.deepcopy(init_server_model)
 # Load models parameters
-load_model_if_exists(server_model, model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
-for client_model in client_models:
-    load_model_if_exists(client_model, model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
-server_optimizer, server_scheduler = create_optimizer(server_model.parameters(), learning_rate)
-client_optimizers_schedulers = [create_optimizer(client_model.parameters(), learning_rate) for client_model in client_models]
+if has_to_load_model:
+    load_model_if_exists(server_model, model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
+    for client_model in client_models:
+        load_model_if_exists(client_model, model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
+# Create optimizers
+from optimizer.optimizers import get_optimizer_scheduler
+server_optimizer, server_scheduler = get_optimizer_scheduler(optimizer_name, server_model.parameters(), learning_rate, epochs)
+client_optimizers_schedulers = [get_optimizer_scheduler(optimizer_name, client_model.parameters(), learning_rate, epochs) for client_model in client_models]
 client_optimizers = [optimizer for optimizer, _ in client_optimizers_schedulers]
 client_schedulers = [scheduler for _, scheduler in client_optimizers_schedulers]
 
@@ -111,6 +128,8 @@ def test_accuracy_split(client_model, server_model):
 
 
 def print_test_accuracy(client_model, server_model, quantized=False):
+    client_model.eval()
+    server_model.eval()
     correct = 0
     total = 0
     loss = 0
@@ -126,6 +145,7 @@ def print_test_accuracy(client_model, server_model, quantized=False):
             if device_client != device_server or quantized:
                 tensor_IR = tensor_IR.to(device_server)
             outputs = server_model(tensor_IR).to('cpu')
+
             curr_loss = loss_fn(outputs, labels)
             pred_class = torch.argmax(outputs, dim=1)
 
@@ -138,13 +158,32 @@ def print_test_accuracy(client_model, server_model, quantized=False):
         print()
     return correct / total
 
+def compare_full_and_quantized_model():
+    client_model_quantized = generate_quantized_model(client_models[0], calib_data_loaders[0], quantization_type=quantization_type)
+    full_acc = print_test_accuracy(client_model=client_models[0], server_model=server_model, quantized=False)
+    quant_acc = print_test_accuracy(client_model=client_model_quantized, server_model=server_model, quantized=True)
+    return full_acc, quant_acc
+
+#####################################################
+#### Inference
+
+if inference_only:
+    compare_full_and_quantized_model()
+    print("Current (accuracy, loss)", test_accuracy_split(client_models[0], server_model))
+    exit(0)
 
 #####################################################
 #### Train
-for i in range(epochs):
-    print(f"Epoch {i}/{epochs}")
-    #print("current accuracy, losss", test_accuracy_split(client_models[0], server_model))
+print("Starting training")
+start_time = time.time()
+for ep in range(epochs+1):
     print()
+    print(f"Epoch {ep}/{epochs}, LR: {server_optimizer.param_groups[0]['lr']:.8f}")
+    if ep%10 == 0:
+        full_acc, quant_acc = compare_full_and_quantized_model()
+        print("Current (accuracy, loss)", test_accuracy_split(client_models[0], server_model))
+        save_results_in_file(results_file_name, run_id, start_time, ep, full_acc, quant_acc, model_name, quantization_type, split_point, num_clients, dataset_name, optimizer_name, learning_rate)
+
     server_model.train()
     for client_model in client_models:
         client_model.train()
@@ -185,17 +224,6 @@ print("current accuracy, losss", test_accuracy_split(client_models[0], server_mo
 
 
 #####################################################
-## Evaluate
+## Evaluate and quantize
 print("accuracy, losss", test_accuracy_split(client_models[0], server_model))
-print_test_accuracy(client_models[0], server_model)
-
-
-#####################################################
-# Quantize
-def compare_full_and_quantized_model():
-    client_model_quantized = generate_quantized_model(client_models[0], calib_data_loaders[0], quantization_type=quantization_type)
-    full_acc = print_test_accuracy(client_model=client_models[0], server_model=server_model, quantized=False)
-    print_test_accuracy(client_model=client_model_quantized, server_model=server_model, quantized=True)
-    return full_acc
-
 compare_full_and_quantized_model()

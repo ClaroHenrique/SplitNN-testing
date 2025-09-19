@@ -2,6 +2,9 @@ import os
 import pickle
 import time
 import torch
+import string
+import random
+import csv
 
 def debug_print(*args, **kwargs):
     if os.getenv("DEBUG") == "1":
@@ -34,6 +37,36 @@ def load_model_if_exists(model, model_name, quantization_type, split_point, is_c
     if os.path.exists(path):
         print(f"Loading model: {model_name}_{dataset_name}")
         model.load_state_dict(torch.load(path, weights_only=True, map_location=torch.device('cpu')))
+
+def generate_run_id(length=8):
+    chars = string.ascii_letters + string.digits
+    return "run_" + "".join(random.choice(chars) for _ in range(length))
+
+def save_results_in_file(file_name, run_id, start_time, epoch, full_accuracy, quant_accuracy, model_name, quantization_type, split_point, num_clients, dataset_name, optimizer_name, learning_rate):
+    file_exists = os.path.isfile(file_name)
+    duration = time.time() - start_time
+    with open(file_name, mode="a", newline="") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow([
+                "run_id", "duration (s)", "epoch", "full_accuracy", "quant_accuracy",
+                "model_name", "quantization_type", "split_point",
+                "num_clients", "dataset_name", "optimizer_name", "learning_rate",
+            ])
+        writer.writerow([
+            run_id,
+            f"{duration:.1f}",
+            epoch,
+            f"{full_accuracy:.8f}",
+            f"{quant_accuracy:.8f}",
+            model_name,
+            quantization_type,
+            split_point,
+            num_clients,
+            dataset_name,
+            optimizer_name,
+            learning_rate,
+        ])
 
 def aggregate_measures_mean(measures):
     keys = list(measures[0].keys())

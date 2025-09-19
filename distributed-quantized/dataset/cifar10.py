@@ -18,6 +18,12 @@ def get_data_loaders(batch_size, client_id, image_size):
         transforms.Resize(image_size),
     ]) # 32x32
 
+    transform_calib = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Resize(image_size),
+    ])
+
     transform_test = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
@@ -25,7 +31,7 @@ def get_data_loaders(batch_size, client_id, image_size):
     ]) 
 
     train_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform_train)
-    calib_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform_test)
+    calib_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform_calib)
     test_dataset = torchvision.datasets.CIFAR10(root='../data', train=False, download=True, transform=transform_test)
 
     # Create a data loader
