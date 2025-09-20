@@ -9,11 +9,6 @@ import distributed_learning_pb2_grpc as pb2_grpc
 import distributed_learning_pb2 as pb2
 import pickletools
 
-from config import experiment_configs
-##### CUSTOMIZE MODEL AND DATA #####
-from model.models import ClientModel
-from model.models import ServerModel
-####################################
 from optimizer.sgd import create_optimizer
 from utils.utils import *
 
@@ -36,15 +31,21 @@ auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
 num_clients = len(os.getenv("CLIENT_ADDRESSES").split(","))
 device_server = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_client = "cpu" 
+results_inference_file_name = "results_inference.csv"
+
 
 loss_fn = nn.CrossEntropyLoss()
 global_request_id = 1
 
+##### CUSTOMIZE MODEL AND DATA #####
+from model.models import ClientModel
+from model.models import ServerModel
+from dataset.datasets import get_num_classes
+####################################
 
-# Load model and optimizer
-server_model = ServerModel(model_name, quantization_type, split_point=split_point, device=device_server, input_shape=None)
+num_classes = get_num_classes(dataset_name)
+server_model = ServerModel(model_name, num_classes=num_classes, quantization_type=quantization_type, split_point=split_point, device=device_server, input_shape=None)
 optimizer, scheduler = create_optimizer(server_model.parameters(), learning_rate)
-
 
 def server_forward(tensor_IR, labels):
     # update server model, returns grad of the input 
@@ -304,13 +305,30 @@ def collect_client_measures(clients, quantized=False):
         print("== Quantized Metrics ==")
     else:
         print("== Full Precision Metrics ==")
-    result = aggregate_measures_mean(all_measures)
-    print(f"Measure mean: ", result)
+    agg_measures = aggregate_measures_mean(all_measures)
+    print(f"Measure mean: ", agg_measures)
     print()
-    return result
+    return agg_measures, all_measures
 
 def run_all_experiment_configs_in_client():
-    for config in experiment_configs:
+    all_configs = []
+    with open("inference_configs.csv", "r") as file:
+        header = file.readline()
+        for line in file:
+            values = line.split(",")
+            print(values)
+            all_configs.append({
+                "MODEL_NAME": values[0].strip(),
+                "QUANTIZATION_TYPE": values[1].strip(),
+                "DATASET_NAME": values[2].strip(),
+                "SPLIT_POINT": int(values[3]),
+                "NUM_CLIENTS": int(values[4]),
+                "IMAGE_SIZE": list(map(int, values[5].strip().split(" "))),
+                "CLIENT_BATCH_SIZE": int(values[6]),
+            })
+    print("All configs: ", all_configs)
+
+    for config in all_configs:
         print("Running experiment with config:", config)
         params_dict = {
             "model_name": config["MODEL_NAME"],
@@ -320,16 +338,23 @@ def run_all_experiment_configs_in_client():
             "batch_size": config["CLIENT_BATCH_SIZE"],
             "split_point": config["SPLIT_POINT"],
             "learning_rate": learning_rate,
-            "num_clients": num_clients,
+            "num_clients": config["NUM_CLIENTS"],
+            "num_classes": num_classes,
         }
         # Initialize clients
+
         asyncio.run(initialize_clients(clients, params_dict))
         generate_quantized_models(clients)
-        result_full = collect_client_measures(clients, quantized=False)
-        result_quantized = collect_client_measures(clients, quantized=True)
-        print(f"Results for {config['MODEL']} with {config['QUANTIZATION_TYPE']} quantization on {config['DATASET']}:")
-        print(f"Full Precision: {result_full}")
-        print(f"Quantized: {result_quantized}")
+        _, measures_full = collect_client_measures(clients, quantized=False)
+        _, measures_quantized = collect_client_measures(clients, quantized=True)
+
+        save_inference_measures_in_file(results_inference_file_name, generate_run_id(), model_name, "full", split_point, dataset_name, client_batch_size, measures_full)
+        save_inference_measures_in_file(results_inference_file_name, generate_run_id(), model_name, quantization_type, split_point, dataset_name, client_batch_size, measures_quantized)
+
+        print(f"Results for {config['MODEL_NAME']} with {config['QUANTIZATION_TYPE']} quantization on {config['DATASET_NAME']}:")
+        print(f"Full Precision: {measures_full}")
+        print(f"Quantized: {measures_quantized}")
+        # TODO: save metrics in file
 
 
 if __name__ == '__main__':
@@ -346,6 +371,7 @@ if __name__ == '__main__':
         "split_point": split_point,
         "learning_rate": learning_rate,
         "num_clients": num_clients,
+        "num_classes": num_classes,
     }
     asyncio.run(initialize_clients(clients, client_params_dict))
     # Initialize server and clients model params
@@ -354,7 +380,7 @@ if __name__ == '__main__':
         load_model_if_exists(server_model, model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
         print("Server model loaded")
         # client model
-        client_model = ClientModel(model_name, quantization_type, split_point=split_point, device= device_client, input_shape=image_size)
+        client_model = ClientModel(model_name, num_classes=num_classes, quantization_type=quantization_type, split_point=split_point, device= device_client, input_shape=image_size)
         load_model_if_exists(server_model, model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
         client_model_state_dict = client_model.state_dict()
         print("Client parameter SUM:", model_parameters_sum(client_model))

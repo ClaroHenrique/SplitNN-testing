@@ -182,7 +182,7 @@ for ep in range(epochs+1):
     if ep%10 == 0:
         full_acc, quant_acc = compare_full_and_quantized_model()
         print("Current (accuracy, loss)", test_accuracy_split(client_models[0], server_model))
-        save_results_in_file(results_file_name, run_id, start_time, ep, full_acc, quant_acc, model_name, quantization_type, split_point, num_clients, dataset_name, optimizer_name, learning_rate)
+        save_training_results_in_file(results_file_name, run_id, start_time, ep, full_acc, quant_acc, model_name, quantization_type, split_point, num_clients, dataset_name, optimizer_name, learning_rate)
 
     server_model.train()
     for client_model in client_models:

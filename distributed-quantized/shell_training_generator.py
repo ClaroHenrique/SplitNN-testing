@@ -13,6 +13,7 @@ epochs = [200]
 
 log_file = "training_log.txt"
 result = f"echo 'Init logging...' > f{log_file} \n"
+count = 0
 
 for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, lr, ep) in itertools.product(
         dataset_names,
@@ -42,8 +43,10 @@ for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, 
         f">> {log_file}\n\n"
     )
     result += cmd
+    count += 1
 
 print(result)
 with open('shell_training.sh', 'w') as f:
     f.write(result)
 
+print("Total of: ", count, "experiments")

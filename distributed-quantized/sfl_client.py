@@ -80,9 +80,10 @@ def inicialize(params_dict):
     split_point = params_dict["split_point"]
     learning_rate = params_dict["learning_rate"] # not really used (changes every backward)
     num_clients = params_dict["num_clients"]
+    num_classes = params_dict["num_classes"]
 
     client_quantized_model = None
-    client_model = ClientModel(model_name, quantization_type, split_point=split_point, device= device_client, input_shape=image_size)
+    client_model = ClientModel(model_name, num_classes=num_classes, quantization_type=quantization_type, split_point=split_point, device= device_client, input_shape=image_size)
 
     train_data_loader, calib_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id, num_clients=num_clients, image_size = image_size)
     train_iter = itertools.cycle(train_data_loader) # TODO: REMOVER itertools.cycle COLOCAR FUNCAO
@@ -114,31 +115,37 @@ def process_test_inference_query(model, batch_size, msg):
     print("process_test_inference_query -", msg)
     measure = {}
     outputs = None
+    gc.collect()
     inputs, labels = get_test_sample()
-    # warmup
     model.eval()
-    with torch.no_grad():
-        model(inputs)
+
+    def infer():
+        model.eval()
+        with torch.no_grad():
+            out = model(inputs)
+        return out
+
+    # warmup
+    outputs = infer() 
 
     # measure memory usage
     gc.collect()
-    init_mem = memory_usage(-1, interval=.001, timeout=1, max_usage=True)
+    mem_first = memory_usage(-1, interval=.01, timeout=1, max_usage=True, include_children=True)
     
     with torch.no_grad():
-        mem_usage = memory_usage(
-            (model, (inputs,)),
-            interval=0.01,
-            include_children=True,
+        mem_peak = memory_usage(
+            (infer,),
+            max_iterations=1,
+            interval=0.001,
             max_usage=True,
+            include_children=True,
             #timestamps=True
         )
-    mem_first = init_mem
-    mem_peak = mem_usage
 
     # measure time
     time_start = time.time()
     with torch.no_grad():
-        outputs = model(inputs)
+        infer()
     time_end = time.time()
 
     outputs, labels = pickle.dumps(outputs), pickle.dumps(labels)
@@ -151,7 +158,6 @@ def process_test_inference_query(model, batch_size, msg):
     measure = pickle.dumps(measure)
     print("process_test_inference_query - measure:", measure)
 
-    gc.collect()
     return outputs, labels, measure
 
 class DistributedClientService(pb2_grpc.DistributedClientServicer):
