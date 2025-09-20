@@ -153,25 +153,27 @@ class ResNet(nn.Module):
             self.relu = nn.ReLU(inplace=True)
             self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        if self.is_layer_in_current_model(split_index=1):
-            self.layer1 = self._make_layer(block, 64, layers[0])
-        
-        if self.is_layer_in_current_model(split_index=2):
-            self.layer2 = self._make_layer(block, 128, layers[1], stride=2,
+        layer1 = self._make_layer(block, 64, layers[0])
+        layer2 = self._make_layer(block, 128, layers[1], stride=2,
                                        dilate=replace_stride_with_dilation[0])
-        
-        if self.is_layer_in_current_model(split_index=3):
-            self.layer3 = self._make_layer(block, 256, layers[2], stride=2,
+        layer3 = self._make_layer(block, 256, layers[2], stride=2,
                                        dilate=replace_stride_with_dilation[1])
-        
-        if self.is_layer_in_current_model(split_index=4):
-            self.layer4 = self._make_layer(block, 512, layers[3], stride=2,
+        layer4 = self._make_layer(block, 512, layers[3], stride=2,
                                        dilate=replace_stride_with_dilation[2])
-            self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        fc = nn.Linear(512 * block.expansion, num_classes)
         
-        
+        if self.is_layer_in_current_model(split_index=1):
+            self.layer1 = layer1
+        if self.is_layer_in_current_model(split_index=2):
+            self.layer2 = layer2
+        if self.is_layer_in_current_model(split_index=3):
+            self.layer3 = layer3
+        if self.is_layer_in_current_model(split_index=4):
+            self.layer4 = layer4
+            self.avgpool = avgpool
         if self.is_layer_in_current_model(split_index=5):
-            self.fc = nn.Linear(512 * block.expansion, num_classes)
+            self.fc = fc
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):

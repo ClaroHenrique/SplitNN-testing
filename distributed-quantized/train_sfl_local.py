@@ -44,7 +44,7 @@ run_id = generate_run_id()
 print("inference_only", inference_only)
 
 
-device_client = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device_client = torch.device("cuda" if torch.cuda.is_available() and quantization_type != 'qat' else "cpu")
 device_server = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 loss_fn = nn.CrossEntropyLoss()
 

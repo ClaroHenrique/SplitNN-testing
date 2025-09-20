@@ -4,12 +4,15 @@ dataset_names = ["Cifar10_IID", "Cifar10_non_IID"] #["Cifar10_IID", "Cifar10_non
 model_names = ["ResNet18", "MobileNetV2"]
 quantization_types = ["ptq", "qat"]
 optimizers = ["Adam"]
-split_points = [1,2,3]
+split_points = [1,2,3] # [1,2,3]
 num_clients = [4,8]
 image_sizes = [(224,224)]
 server_batch_sizes = [128]
 learning_rates = [0.0001]
 epochs = [200]
+
+log_file = "training_log.txt"
+result = f"echo 'Init logging...' > f{log_file} \n"
 
 for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, lr, ep) in itertools.product(
         dataset_names,
@@ -35,8 +38,12 @@ for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, 
         f"--image_size {img_size[0]} {img_size[1]} "
         f"--client_batch_size {client_batch_size} "
         f"--learning_rate {lr} "
-        f"--epochs {ep}"
+        f"--epochs {ep} "
+        f">> {log_file}\n\n"
     )
-    print(cmd)
-    print()
+    result += cmd
+
+print(result)
+with open('shell_training.sh', 'w') as f:
+    f.write(result)
 
