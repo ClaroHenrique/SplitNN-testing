@@ -60,11 +60,15 @@ test_iter = None
 optimizer = None
 
 def get_train_sample():
-    # TODO: REMOVE intertools.cycle. it does not shuffle the data between epochs
-    return next(train_iter)
+    global train_iter
+    batch = next(train_iter, None)
+    if batch is None:
+        train_iter = iter(train_data_loader)
+        return next(train_iter)
+    return batch
 
 def get_test_sample():
-    return next(test_iter)
+    return next(test_iter) # TODO: cycle if really needed
 
 def inicialize(params_dict):
     print("inicializate params_dict:", params_dict)
@@ -86,8 +90,8 @@ def inicialize(params_dict):
     client_model = ClientModel(model_name, num_classes=num_classes, quantization_type=quantization_type, split_point=split_point, device= device_client, input_shape=image_size)
 
     train_data_loader, calib_data_loader, test_data_loader = get_data_loaders(dataset_name, batch_size=batch_size, client_id=client_id, num_clients=num_clients, image_size = image_size)
-    train_iter = itertools.cycle(train_data_loader) # TODO: REMOVER itertools.cycle COLOCAR FUNCAO
-    test_iter = itertools.cycle(test_data_loader)
+    train_iter = iter(train_data_loader)
+    test_iter = iter(test_data_loader)
 
     optimizer, _ = create_optimizer(client_model.parameters(), learning_rate)
     last_output = None
@@ -109,7 +113,6 @@ def process_backward_query(grad, new_lr):
     optimizer.zero_grad()
     last_output.backward(grad)
     optimizer.step()
-
 
 def process_test_inference_query(model, batch_size, msg):
     print("process_test_inference_query -", msg)
