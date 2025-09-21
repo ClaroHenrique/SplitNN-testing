@@ -31,7 +31,7 @@ auto_load_models = int(os.getenv("AUTO_LOAD_MODELS"))
 num_clients = len(os.getenv("CLIENT_ADDRESSES").split(","))
 device_server = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_client = "cpu" 
-results_inference_file_name = "results_inference.csv"
+results_inference_file_name = "./experiments/results_inference.csv"
 
 
 loss_fn = nn.CrossEntropyLoss()
