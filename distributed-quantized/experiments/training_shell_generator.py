@@ -46,7 +46,7 @@ for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, 
     count += 1
 
 print(result)
-with open('./experiments/shell_training.sh', 'w') as f:
+with open('./experiments/training_script.sh', 'w') as f:
     f.write(result)
 
 print("Total of: ", count, "experiments")
