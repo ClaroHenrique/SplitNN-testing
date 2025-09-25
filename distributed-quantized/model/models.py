@@ -35,9 +35,6 @@ def get_model(name, num_classes, quantization_type, split_point, is_client, inpu
 
     device = torch.device(device)
 
-    if is_client and quantization_type == 'qat':
-        model = generate_prepared_model_qat(model, input_shape)
-
     model.to(device)
     return model
 

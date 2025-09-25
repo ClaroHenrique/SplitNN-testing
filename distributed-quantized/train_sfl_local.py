@@ -4,6 +4,7 @@ import torch
 import copy
 from optimizer.adam import create_optimizer
 from model.quantization import generate_quantized_model
+from model.quantization import generate_quantized_model_qat
 from torch import nn
 from utils.utils import *
 
@@ -179,10 +180,15 @@ start_time = time.time()
 for ep in range(epochs+1):
     print()
     print(f"Epoch {ep}/{epochs}, LR: {server_optimizer.param_groups[0]['lr']:.8f}")
+    if ep == 1 and quantization_type == 'qat':
+        # Quantize with QAT after first epoch to avoid numeric instability
+        server_model = generate_quantized_model_qat(server_model, input_shape=None)
+
     if ep%10 == 0:
-        full_acc, quant_acc = compare_full_and_quantized_model()
+        if ep > 0:
+            full_acc, quant_acc = compare_full_and_quantized_model()
+            save_training_results_in_file(results_file_name, run_id, start_time, ep, full_acc, quant_acc, model_name, quantization_type, split_point, num_clients, dataset_name, optimizer_name, learning_rate)
         print("Current (accuracy, loss)", test_accuracy_split(client_models[0], server_model))
-        save_training_results_in_file(results_file_name, run_id, start_time, ep, full_acc, quant_acc, model_name, quantization_type, split_point, num_clients, dataset_name, optimizer_name, learning_rate)
 
     server_model.train()
     for client_model in client_models:
