@@ -42,7 +42,7 @@ def generate_run_id(length=8):
     chars = string.ascii_letters + string.digits
     return "run_" + "".join(random.choice(chars) for _ in range(length))
 
-def save_results_in_file(file_name, run_id, start_time, epoch, full_accuracy, quant_accuracy, model_name, quantization_type, split_point, num_clients, dataset_name, optimizer_name, learning_rate):
+def save_training_results_in_file(file_name, run_id, start_time, epoch, full_accuracy, quant_accuracy, model_name, quantization_type, split_point, num_clients, dataset_name, optimizer_name, learning_rate):
     file_exists = os.path.isfile(file_name)
     duration = time.time() - start_time
     with open(file_name, mode="a", newline="") as f:
@@ -67,6 +67,29 @@ def save_results_in_file(file_name, run_id, start_time, epoch, full_accuracy, qu
             optimizer_name,
             learning_rate,
         ])
+
+def save_inference_measures_in_file(file_name, run_id, model_name, quantization_type, split_point, dataset_name, batch_size, measures):
+    file_exists = os.path.isfile(file_name)
+
+    columns = ["run_id", "model_name", "quantization_type", "split_point", "dataset_name", "batch_size"]
+    measures_columns = [k for k in measures[0].keys()]
+
+    with open(file_name, mode="a", newline="") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(columns + measures_columns)
+        
+        for measure in measures:
+            writer.writerow(
+                [
+                    run_id,
+                    model_name,
+                    quantization_type,
+                    split_point,
+                    dataset_name,
+                    batch_size,
+                ] + [measure[k] for k in measures_columns]
+            )
 
 def aggregate_measures_mean(measures):
     keys = list(measures[0].keys())

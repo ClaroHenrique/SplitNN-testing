@@ -39,7 +39,7 @@ learning_rate = args.learning_rate
 epochs = args.epochs
 has_to_load_model = args.inference_only
 inference_only = args.inference_only
-results_file_name = "./experiments/results_accuracy.csv"
+results_file_name = "./experiments/training_results.csv"
 run_id = generate_run_id()
 print("inference_only", inference_only)
 

@@ -1,3 +1,4 @@
+dataset_names,model_names,quantization_types,split_points,num_clients,image_sizes,client_batch_sizes
 ResNet18, ptq, Cifar10_IID, 1, 1, 224 224, 128, 
 ResNet18, ptq, Cifar10_IID, 2, 1, 224 224, 128, 
 ResNet18, ptq, Cifar10_IID, 3, 1, 224 224, 128, 
