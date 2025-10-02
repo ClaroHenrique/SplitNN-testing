@@ -10,7 +10,9 @@ from dataset.imagenette import get_data_loaders as get_data_loaders_imagenette
 
 def get_data_loaders(dataset, batch_size, client_id, num_clients, image_size):
     if dataset == "Cifar10_non_IID":
-        return get_data_loaders_cifar10_non_iid(batch_size, client_id, num_clients, image_size)
+        return get_data_loaders_cifar10_non_iid(batch_size, client_id, num_clients, image_size, dirichlet_alpha=0.3)
+    if dataset == "Cifar10_extreme_non_IID":
+        return get_data_loaders_cifar10_non_iid(batch_size, client_id, num_clients, image_size, dirichlet_alpha=0.1)
     if dataset == "Cifar10_IID":
         return get_data_loaders_cifar10_iid(batch_size, client_id, num_clients, image_size)
     if dataset == "Cifar10":
@@ -31,6 +33,8 @@ def get_data_loaders(dataset, batch_size, client_id, num_clients, image_size):
 
 def get_num_classes(dataset):
     if dataset == "Cifar10_non_IID":
+        return 10
+    if dataset == "Cifar10_extreme_non_IID":
         return 10
     if dataset == "Cifar10_IID":
         return 10

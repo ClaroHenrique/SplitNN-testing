@@ -3,8 +3,8 @@ import torchvision.transforms as transforms
 import torch
 import copy
 from optimizer.adam import create_optimizer
+from model.quantization import generate_prepared_model_qat
 from model.quantization import generate_quantized_model
-from model.quantization import generate_quantized_model_qat
 from torch import nn
 from utils.utils import *
 
@@ -50,6 +50,25 @@ device_server = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 loss_fn = nn.CrossEntropyLoss()
 
 #####################################################
+
+print("*"*20)
+print("Starting training with:")
+print("Run ID:", run_id)
+print("Model:", model_name)
+print("Quantization type:", quantization_type)
+print("Optimizer:", optimizer_name)
+print("Dataset:", dataset_name)
+print("Split point:", split_point)
+print("Number of clients:", num_clients)
+print("Image size:", image_size)
+print("Client batch size:", client_batch_size)
+print("Learning rate:", learning_rate)
+print("Epochs:", epochs)
+print("Device client:", device_client)
+print("Device server:", device_server)
+print("*"*20)
+
+#####################################################
 # Define Data
 from dataset.datasets import get_data_loaders
 print("Starting data loaders")
@@ -80,10 +99,20 @@ init_client_model = ClientModel(model_name, num_classes, quantization_type, spli
 client_models = [copy.deepcopy(init_client_model) for _ in range(num_clients)]
 server_model = copy.deepcopy(init_server_model)
 # Load models parameters
-if has_to_load_model:
-    load_model_if_exists(server_model, model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
+# if has_to_load_model:
+#     load_model_if_exists(server_model, model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
+#     for client_model in client_models:
+#         load_model_if_exists(client_model, model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
+if quantization_type == "qat":
+    ok = load_model_if_exists(server_model, model_name, "ptq", split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
     for client_model in client_models:
-        load_model_if_exists(client_model, model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
+        ok = ok and load_model_if_exists(client_model, model_name, "ptq", split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
+    client_models = [generate_prepared_model_qat(client_model, input_shape=(1, 3, image_size[0], image_size[1])) for client_model in client_models]
+    if not ok:
+        print("QAT requires a pre-trained PTQ model. Exiting.")
+        exit(1)
+    else:
+        print("Loaded pre-trained PTQ model for QAT.")
 # Create optimizers
 from optimizer.optimizers import get_optimizer_scheduler
 server_optimizer, server_scheduler = get_optimizer_scheduler(optimizer_name, server_model.parameters(), learning_rate, epochs)
@@ -180,13 +209,15 @@ start_time = time.time()
 for ep in range(epochs+1):
     print()
     print(f"Epoch {ep}/{epochs}, LR: {server_optimizer.param_groups[0]['lr']:.8f}")
-    if ep == 1 and quantization_type == 'qat':
-        # Quantize with QAT after first epoch to avoid numeric instability
-        server_model = generate_quantized_model_qat(server_model, input_shape=None)
+    # if ep == 5 and quantization_type == 'qat':
+    #     # Quantize with QAT after first epoch to avoid numeric instability
+    #     print("Preparing client models for QAT")
+    #     client_models = [generate_prepared_model_qat(client_model, input_shape=(1, 3, image_size[0], image_size[1])) for client_model in client_models]
 
-    if ep%10 == 0:
+    if ep % 10 == 0:
         if ep > 0:
             full_acc, quant_acc = compare_full_and_quantized_model()
+            # gambiarra to 
             save_training_results_in_file(results_file_name, run_id, start_time, ep, full_acc, quant_acc, model_name, quantization_type, split_point, num_clients, dataset_name, optimizer_name, learning_rate)
         print("Current (accuracy, loss)", test_accuracy_split(client_models[0], server_model))
 
@@ -211,7 +242,7 @@ for ep in range(epochs+1):
 
         loss = loss_fn(concat_outputs, concat_labels)
 
-        print("Loss", loss, end="\r")
+        #print("Loss", loss, end="\r")
         loss.backward()
 
         server_optimizer.step()
@@ -223,8 +254,14 @@ for ep in range(epochs+1):
     server_scheduler.step()
     for client_scheduler in client_schedulers:
         client_scheduler.step()
-    save_state_dict(server_model.state_dict(), model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name)
-    save_state_dict(client_models[0].state_dict(), model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name)
+    
+    if ep == 180:
+        # models trained for 180 are saved without run_id for easier loading for QAT
+        save_state_dict(server_model.state_dict(), model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name, run_id="")
+        save_state_dict(client_models[0].state_dict(), model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name, run_id="")
+
+    save_state_dict(server_model.state_dict(), model_name, quantization_type, split_point, is_client=False, num_clients=num_clients, dataset_name=dataset_name, run_id=run_id)
+    save_state_dict(client_models[0].state_dict(), model_name, quantization_type, split_point, is_client=True, num_clients=num_clients, dataset_name=dataset_name, run_id=run_id)
 
 print("current accuracy, losss", test_accuracy_split(client_models[0], server_model))
 

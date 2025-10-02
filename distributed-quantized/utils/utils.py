@@ -18,13 +18,17 @@ def model_parameters_sum(model):
 
 def size_of_model(model):
     return len(pickle.dumps(model.state_dict()))
-    
 
-def save_state_dict(state_dict, model_name, quantization_type, split_point, is_client, num_clients, dataset_name):
+
+def save_state_dict(state_dict, model_name, quantization_type, split_point, is_client, num_clients, dataset_name, run_id=""):
+    if run_id == None:
+        run_id = ""
+    if run_id != "":
+        run_id = f"_{run_id}"
     if is_client:
-        model_name = f"{model_name}_{quantization_type}_s{split_point}_client_n{num_clients}"
+        model_name = f"{model_name}_{quantization_type}_s{split_point}_client_n{num_clients}{run_id}"
     else:
-        model_name = f"{model_name}_{quantization_type}_s{split_point}_server_n{num_clients}"
+        model_name = f"{model_name}_{quantization_type}_s{split_point}_server_n{num_clients}{run_id}"
     torch.save(state_dict, f"./model-state/{model_name}_{dataset_name}.pth")
 
 def load_model_if_exists(model, model_name, quantization_type, split_point, is_client, num_clients, dataset_name):
@@ -37,6 +41,10 @@ def load_model_if_exists(model, model_name, quantization_type, split_point, is_c
     if os.path.exists(path):
         print(f"Loading model: {model_name}_{dataset_name}")
         model.load_state_dict(torch.load(path, weights_only=True, map_location=torch.device('cpu')))
+        return True
+    else:
+        print(f"Model not found: {path}")
+        return False
 
 def generate_run_id(length=8):
     chars = string.ascii_letters + string.digits
@@ -68,7 +76,7 @@ def save_training_results_in_file(file_name, run_id, start_time, epoch, full_acc
             learning_rate,
         ])
 
-def save_inference_measures_in_file(file_name, run_id, model_name, quantization_type, split_point, dataset_name, batch_size, measures):
+def save_inference_results_in_file(file_name, run_id, model_name, quantization_type, split_point, dataset_name, batch_size, measures):
     file_exists = os.path.isfile(file_name)
 
     columns = ["run_id", "model_name", "quantization_type", "split_point", "dataset_name", "batch_size"]

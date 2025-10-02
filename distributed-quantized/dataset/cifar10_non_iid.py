@@ -44,7 +44,7 @@ class Cifar10_Train_NonIID_Dataset(Dataset):
         return len(self.partition)
 
 
-def get_data_loaders(batch_size, client_id, num_clients, image_size):
+def get_data_loaders(batch_size, client_id, num_clients, image_size, dirichlet_alpha=0.3):
 
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
@@ -66,7 +66,7 @@ def get_data_loaders(batch_size, client_id, num_clients, image_size):
         transforms.Resize(image_size),
     ])
 
-    train_dataset = Cifar10_Train_NonIID_Dataset(client_id=client_id, num_clients=num_clients, transform=transform_train)
+    train_dataset = Cifar10_Train_NonIID_Dataset(client_id=client_id, num_clients=num_clients, transform=transform_train, dirichlet_alpha=dirichlet_alpha)
     calib_dataset = torchvision.datasets.CIFAR10(root='../data', train=True, download=True, transform=transform_calib)
     test_dataset = torchvision.datasets.CIFAR10(root='../data', train=False, download=True, transform=transform_test)
 

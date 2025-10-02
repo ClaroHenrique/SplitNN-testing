@@ -1,19 +1,19 @@
 import itertools
 import csv
 
-dataset_names = ["Cifar10_IID", "Cifar10_non_IID"] #["Cifar10_IID", "Cifar10_non_IID", "XRay_IID", "XRay_non_IID"]
+dataset_names = ["Cifar10_IID", "Cifar10_extreme_non_IID"] #["Cifar10_IID", "Cifar10_non_IID", "XRay_IID", "XRay_non_IID"]
 model_names = ["ResNet18", "MobileNetV2"]
 quantization_types = ["ptq", "qat"]
 optimizers = ["Adam"]
-split_points = [1,2,3] 
-num_clients = [4,8,16]
+split_points = [1,2,3]
+num_clients = [4,8]
 image_sizes = [(224,224)]
 server_batch_sizes = [128]
 learning_rates = [0.0001]
 epochs = [200]
 
 log_file = "./experiments/training_log.txt"
-result = f"echo 'Init logging...' > f{log_file} \n"
+result = f"echo 'Init logging...' >> {log_file} \n"
 count = 0
 skipped = 0
 
@@ -30,7 +30,9 @@ configs_done = []
 with open("experiments/training_results.csv", "r", newline="") as f:
     leitor = csv.DictReader(f)
     for linha in leitor:
-        if int(linha["epoch"]) == 200:
+        epochs_done = int(linha["epoch"])
+        quantization_type = linha["quantization_type"]
+        if (quantization_type == "ptq" and epochs_done == 200) or (quantization_type == "qat" and epochs_done == 20):
             config = dict([(k, v) for k,v in linha.items() if k in important_columns])
             configs_done.append(config)
 
@@ -47,6 +49,11 @@ for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, 
         learning_rates,
         epochs,
         ):
+    
+    if quant == "qat":
+        ep = int(ep * 0.1)
+        lr = lr * 0.001
+
     config = {}
     config["model_name"] = model
     config["quantization_type"] = quant
@@ -56,10 +63,13 @@ for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, 
     config["optimizer_name"] = opt
     config["learning_rate"] = str(lr)
 
+
     if ignore_finished and config in configs_done:
         print("Skipping already finished experiment: ", config)
         skipped += 1
         continue
+
+    
 
     client_batch_size = server_batch_size // n_clients
     cmd = (
@@ -72,7 +82,7 @@ for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, 
         f"--num_clients {n_clients} "
         f"--image_size {img_size[0]} {img_size[1]} "
         f"--client_batch_size {client_batch_size} "
-        f"--learning_rate {lr} "
+        f"--learning_rate {lr:.10f} "
         f"--epochs {ep} "
         f">> {log_file}\n\n"
     )

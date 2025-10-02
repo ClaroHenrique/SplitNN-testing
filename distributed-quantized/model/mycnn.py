@@ -20,7 +20,7 @@ class MyCNN_Client(nn.Module):
 class MyCNN_Server(nn.Module):
   def __init__(self):
     super().__init__()
-    self.fc1 = nn.Linear(400, 120)
+    self.fc1 = nn.Linear(44944, 120)
     self.fc2 = nn.Linear(120, 84)
     self.fc3 = nn.Linear(84, 10)
 
@@ -30,8 +30,14 @@ class MyCNN_Server(nn.Module):
     x = self.fc3(x)
     return x
 
-def ClientModel(split_point=None):
-    return MyCNN_Client(), "mycnn_client"
+def ClientModel(is_client, split_point=None):
+    return MyCNN_Client()
 
-def ServerModel(split_point=None):
-    return MyCNN_Server(), "mycnn_server"
+def ServerModel(is_client, split_point=None):
+    return MyCNN_Server()
+
+def MyCNN(num_classes=10, split_point=None, is_client=None):
+    if is_client:
+        return MyCNN_Client()
+    else:
+        return MyCNN_Server()
