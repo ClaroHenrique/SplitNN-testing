@@ -22,7 +22,7 @@ ignore_finished = True
 # Columns that define an unique experiment
 important_columns = [
     "model_name", "quantization_type", "split_point",
-    "num_clients", "dataset_name", "optimizer_name", "learning_rate",
+    "num_clients", "dataset_name", "optimizer_name", #"learning_rate",
 ]
 
 configs_done = []
@@ -35,8 +35,12 @@ with open("experiments/training_results.csv", "r", newline="") as f:
         if (quantization_type == "ptq" and epochs_done == 200) or (quantization_type == "qat" and epochs_done == 20):
             config = dict([(k, v) for k,v in linha.items() if k in important_columns])
             configs_done.append(config)
+            print("Ignoring done experiment: ", linha)
 
-
+for c in configs_done:
+    print("Done: ", c)
+    print("-----")
+    print()
 for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, lr, ep) in itertools.product(
         dataset_names,
         model_names,
@@ -50,10 +54,6 @@ for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, 
         epochs,
         ):
     
-    if quant == "qat":
-        ep = int(ep * 0.1)
-        lr = lr * 0.001
-
     config = {}
     config["model_name"] = model
     config["quantization_type"] = quant
@@ -61,16 +61,15 @@ for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, 
     config["num_clients"] = str(n_clients)
     config["dataset_name"] = dataset
     config["optimizer_name"] = opt
-    config["learning_rate"] = str(lr)
-
+    #config["learning_rate"] = str(lr)
 
     if ignore_finished and config in configs_done:
-        print("Skipping already finished experiment: ", config)
         skipped += 1
         continue
-
     
-
+    if quant == "qat":
+        ep = int(ep * 0.1)
+        lr = lr * 0.001
     client_batch_size = server_batch_size // n_clients
     cmd = (
         f"python3 train_sfl_local.py "
@@ -89,7 +88,7 @@ for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, 
     result += cmd
     count += 1
 
-print(result)
+#print(result)
 with open('./experiments/training_script.sh', 'w') as f:
     f.write(result)
 
