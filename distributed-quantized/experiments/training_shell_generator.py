@@ -2,10 +2,10 @@ import itertools
 import csv
 
 dataset_names = ["Cifar10_IID", "Cifar10_extreme_non_IID"] #["Cifar10_IID", "Cifar10_non_IID", "XRay_IID", "XRay_non_IID"]
-model_names = ["ResNet18", "MobileNetV2"]
+model_names = ["VGG11", "ResNet18", "MobileNetV2"]
 quantization_types = ["ptq", "qat"]
 optimizers = ["Adam"]
-split_points = [1,2,3]
+split_points = [1,2]
 num_clients = [4,8]
 image_sizes = [(224,224)]
 server_batch_sizes = [128]
@@ -35,12 +35,9 @@ with open("experiments/training_results.csv", "r", newline="") as f:
         if (quantization_type == "ptq" and epochs_done == 200) or (quantization_type == "qat" and epochs_done == 20):
             config = dict([(k, v) for k,v in linha.items() if k in important_columns])
             configs_done.append(config)
-            print("Ignoring done experiment: ", linha)
+            #print("Ignoring done experiment: ", linha)
 
-for c in configs_done:
-    print("Done: ", c)
-    print("-----")
-    print()
+
 for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, lr, ep) in itertools.product(
         dataset_names,
         model_names,

@@ -2,13 +2,18 @@ from model.resnet import *
 from model.mobilenetv2 import *
 from model.resnet_32x32 import *
 from model.test_model import *
+from model.vgg import *
 from model.mycnn import MyCNN
 from model.quantization import generate_prepared_model_qat
 import torch
 
 
 def get_model(name, num_classes, quantization_type, split_point, is_client, input_shape, device, state_dict):
-    if name == 'ResNet18':
+    if name == 'VGG11':
+        model = vgg11(is_client=is_client, split_point=split_point, num_classes=num_classes)
+    elif name == 'VGG11_bn':
+        model = vgg11_bn(is_client=is_client, split_point=split_point, num_classes=num_classes)
+    elif name == 'ResNet18':
         model = resnet18(num_classes=num_classes, split_point=split_point, is_client=is_client)
     elif name == 'ResNet34':
         model = resnet34(num_classes=num_classes, split_point=split_point, is_client=is_client)

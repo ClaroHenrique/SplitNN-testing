@@ -1,7 +1,7 @@
 import itertools
 
 dataset_names = ["Cifar10_IID"]
-model_names = ["ResNet18", "MobileNetV2"]
+model_names = ["VGG11_bn", "ResNet18", "MobileNetV2"]
 quantization_types = ["ptq"]
 split_points = [1,2,3] # [1,2,3]
 num_clients = [1]

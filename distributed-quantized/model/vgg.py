@@ -82,51 +82,43 @@ def _vgg(arch, is_client, split_point, cfg, batch_norm, pretrained, progress, **
 
 
 def vgg11(is_client, split_point, pretrained=False, progress=True, **kwargs):
-    arch = 'vgg11'
-    return arch, _vgg(arch, is_client, split_point, 'A', False, pretrained, progress, **kwargs)
+    return _vgg('vgg11', is_client, split_point, 'A', False, pretrained, progress, **kwargs)
 
 
 def vgg11_bn(is_client, split_point, pretrained=False, progress=True, **kwargs):
-    arch = 'vgg11_bn'
-    return arch, _vgg(arch, is_client, split_point, 'A', True, pretrained, progress, **kwargs)
+    return _vgg('vgg11_bn', is_client, split_point, 'A', True, pretrained, progress, **kwargs)
 
 
 def vgg13(is_client, split_point, pretrained=False, progress=True, **kwargs):
-    arch = 'vgg13'
-    return arch, _vgg(arch, is_client, split_point, 'B', False, pretrained, progress, **kwargs)
+    return _vgg('vgg13', is_client, split_point, 'B', False, pretrained, progress, **kwargs)
 
 
 def vgg13_bn(is_client, split_point, pretrained=False, progress=True, **kwargs):
-    arch = 'vgg13_bn'
-    return arch, _vgg(arch, is_client, split_point, 'B', True, pretrained, progress, **kwargs)
+    return _vgg('vgg13_bn', is_client, split_point, 'B', True, pretrained, progress, **kwargs)
 
 
 def vgg16(is_client, split_point, pretrained=False, progress=True, **kwargs):
-    arch = 'vgg16'
-    return arch, _vgg(arch, is_client, split_point, 'D', False, pretrained, progress, **kwargs)
+    return _vgg('vgg16', is_client, split_point, 'D', False, pretrained, progress, **kwargs)
 
 
 def vgg16_bn(is_client, split_point, pretrained=False, progress=True, **kwargs):
-    arch = 'vgg16_bn'
-    return arch, _vgg(arch, is_client, split_point, 'D', True, pretrained, progress, **kwargs)
+    return _vgg('vgg16_bn', is_client, split_point, 'D', True, pretrained, progress, **kwargs)
 
 
 def vgg19(is_client, split_point, pretrained=False, progress=True, **kwargs):
-    arch = 'vgg19'
-    return arch, _vgg(arch, is_client, split_point, 'E', False, pretrained, progress, **kwargs)
+    return _vgg('vgg19', is_client, split_point, 'E', False, pretrained, progress, **kwargs)
 
 
 def vgg19_bn(is_client, split_point, pretrained=False, progress=True, **kwargs):
-    arch = 'vgg19_bn'
-    return arch, _vgg(arch, is_client, split_point, 'E', True, pretrained, progress, **kwargs)
+    return _vgg('vgg19_bn', is_client, split_point, 'E', True, pretrained, progress, **kwargs)
 
-def ClientModel(split_point=1, num_classes=10):
-    model_name, model = vgg19_bn(is_client=True, split_point=split_point, num_classes=num_classes)
-    return model, model_name + "_client"
+# def ClientModel(split_point=1, num_classes=10):
+#     model_name, model = vgg11_bn(is_client=True, split_point=split_point, num_classes=num_classes)
+#     return model, model_name + "_client"
 
-def ServerModel(split_point=1, num_classes=10):
-    model_name, model = vgg19_bn(is_client=False, split_point=split_point, num_classes=num_classes)
-    return model, model_name + "_server"
+# def ServerModel(split_point=1, num_classes=10):
+#     model_name, model = vgg11_bn(is_client=False, split_point=split_point, num_classes=num_classes)
+#     return model, model_name + "_server"
 
 
 
