@@ -78,13 +78,14 @@ def save_training_results_in_file(file_name, run_id, start_time, epoch, full_acc
 
 def save_inference_results_in_file(file_name, run_id, model_name, quantization_type, split_point, dataset_name, batch_size, measures):
     file_exists = os.path.isfile(file_name)
+    file_is_empty = file_exists and os.path.getsize(file_name) == 0
 
     columns = ["run_id", "model_name", "quantization_type", "split_point", "dataset_name", "batch_size"]
     measures_columns = [k for k in measures[0].keys()]
 
     with open(file_name, mode="a", newline="") as f:
         writer = csv.writer(f)
-        if not file_exists:
+        if not file_exists or file_is_empty:
             writer.writerow(columns + measures_columns)
         
         for measure in measures:

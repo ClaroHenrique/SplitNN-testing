@@ -288,9 +288,10 @@ def generate_quantized_models(clients):
 
 def collect_client_measures(clients, quantized=False):
     all_measures = []
-    iterations = 0
+    iterations = 1
 
     while True:
+        print(f"Collecting measures iteration {iterations}")
         client = clients[0]
         if quantized:
             tensor_IR, labels, measure = client.test_quantized_inference(batch_size=client_batch_size) #TODO fix batchsize
@@ -326,7 +327,8 @@ def run_all_experiment_configs_in_client():
                 "IMAGE_SIZE": list(map(int, values[5].strip().split(" "))),
                 "CLIENT_BATCH_SIZE": int(values[6]),
             })
-    print("All configs: ", all_configs)
+    print("All configs: "); [print(config) for config in all_configs]; print()
+
 
     for config in all_configs:
         print("Running experiment with config:", config)
@@ -348,8 +350,8 @@ def run_all_experiment_configs_in_client():
         _, measures_full = collect_client_measures(clients, quantized=False)
         _, measures_quantized = collect_client_measures(clients, quantized=True)
 
-        save_inference_results_in_file(results_inference_file_name, generate_run_id(), config["MODEL_NAME"], "full"           , config["SPLIT_POINT"], config["DATASET_NAME"], config["CLIENT_BATCH_SIZE"], measures_full)
-        save_inference_results_in_file(results_inference_file_name, generate_run_id(), config["MODEL_NAME"], quantization_type, config["SPLIT_POINT"], config["DATASET_NAME"], config["CLIENT_BATCH_SIZE"], measures_quantized)
+        save_inference_results_in_file(results_inference_file_name, generate_run_id(), config["MODEL_NAME"], "full"                     , config["SPLIT_POINT"], config["DATASET_NAME"], config["CLIENT_BATCH_SIZE"], measures_full)
+        save_inference_results_in_file(results_inference_file_name, generate_run_id(), config["MODEL_NAME"], config["QUANTIZATION_TYPE"], config["SPLIT_POINT"], config["DATASET_NAME"], config["CLIENT_BATCH_SIZE"], measures_quantized)
 
         print(f"Results for {config['MODEL_NAME']} with {config['QUANTIZATION_TYPE']} quantization on {config['DATASET_NAME']}:")
         print(f"Full Precision: {measures_full}")
