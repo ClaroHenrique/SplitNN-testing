@@ -1,7 +1,7 @@
 import itertools
 import csv
 
-dataset_names = ["Cifar10_IID", "Cifar10_extreme_non_IID"] #["Cifar10_IID", "Cifar10_non_IID", "XRay_IID", "XRay_non_IID"]
+dataset_names = ["XRay_IID"] #["Cifar10_IID", "Cifar10_extreme_non_IID"] #["Cifar10_IID", "Cifar10_non_IID", "XRay_IID", "XRay_non_IID"]
 model_names = ["VGG11", "ResNet18", "MobileNetV2"]
 quantization_types = ["ptq", "qat"]
 optimizers = ["Adam"]
