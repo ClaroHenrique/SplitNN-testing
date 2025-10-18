@@ -25,7 +25,7 @@ def get_data_loaders(dataset, batch_size, client_id, num_clients, image_size):
         return get_data_loaders_imagenette(batch_size, client_id, image_size)
     if dataset == "XRay_IID":
         return get_data_loaders_xray_iid(batch_size, client_id, num_clients, image_size)
-    if dataset == "XRay_non_IID":
+    if dataset == "XRay_extreme_non_IID":
         return get_data_loaders_xray_non_iid(batch_size, client_id, num_clients, image_size)
     else:
         raise ValueError(f"Dataset {dataset} not supported.")    

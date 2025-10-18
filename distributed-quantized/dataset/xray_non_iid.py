@@ -19,7 +19,8 @@ from flwr_datasets.partitioner import DirichletPartitioner
 import numpy as np
 
 class XRay_Train_non_IID_Dataset(Dataset):
-    def __init__(self, client_id, num_clients, dirichlet_alpha = 0.3, random_state=42, transform=None, data_dir=None):
+    
+    def __init__(self, client_id, num_clients, dirichlet_alpha = 0.1, random_state=42, transform=None, data_dir=None):
         # self.client_id = client_id
         # self.num_clients = num_clients
         # self.random_seed = random_seed
@@ -57,7 +58,7 @@ class XRay_Train_non_IID_Dataset(Dataset):
 
 
 def get_data_loaders(batch_size, client_id, num_clients, image_size):
-
+    #TODO: set dirichlet alpha as parameter
     transform_train = transforms.Compose([
         transforms.Resize(image_size),
         transforms.RandomHorizontalFlip(),
