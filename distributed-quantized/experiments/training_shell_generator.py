@@ -1,7 +1,9 @@
 import itertools
 import csv
+import os
 
-dataset_names = ["XRay_IID"] #["Cifar10_IID", "Cifar10_extreme_non_IID"] #["Cifar10_IID", "Cifar10_non_IID", "XRay_IID", "XRay_non_IID"]
+
+dataset_names = ["Cifar10_IID", "Cifar10_extreme_non_IID"] #["Cifar10_IID", "Cifar10_non_IID", "XRay_IID", "XRay_non_IID"]
 model_names = ["VGG11", "ResNet18", "MobileNetV2"]
 quantization_types = ["ptq", "qat"]
 optimizers = ["Adam"]
@@ -25,18 +27,26 @@ important_columns = [
     "num_clients", "dataset_name", "optimizer_name", #"learning_rate",
 ]
 
-configs_done = []
+# Ignores configs already done
+configs_done_count = {}
 
-with open("experiments/training_results.csv", "r", newline="") as f:
-    leitor = csv.DictReader(f)
-    for linha in leitor:
-        epochs_done = int(linha["epoch"])
-        quantization_type = linha["quantization_type"]
-        if (quantization_type == "ptq" and epochs_done == 200) or (quantization_type == "qat" and epochs_done == 20):
-            config = dict([(k, v) for k,v in linha.items() if k in important_columns])
-            configs_done.append(config)
-            #print("Ignoring done experiment: ", linha)
+# check if experiments/training_results.csv exists
+if os.path.exists("experiments/training_results.csv"):
+    with open("experiments/training_results.csv", "r", newline="") as f:
+        leitor = csv.DictReader(f)
+        for linha in leitor:
+            epochs_done = int(linha["epoch"])
+            quantization_type = linha["quantization_type"]
+            if (quantization_type == "ptq" and epochs_done == 200) or (quantization_type == "qat" and epochs_done == 20):
+                config = dict([(k, v) for k,v in linha.items() if k in important_columns])
+                ckey = tuple(config.items())
+                if ckey not in configs_done_count:
+                    configs_done_count[ckey] = 1
+                else:
+                    configs_done_count[ckey] += 1
+                #print("Ignoring done experiment: ", linha)
 
+number_of_repetitions = int(input("Tell the number of repetitions for each experiment: "))
 
 for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, lr, ep) in itertools.product(
         dataset_names,
@@ -59,10 +69,6 @@ for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, 
     config["dataset_name"] = dataset
     config["optimizer_name"] = opt
     #config["learning_rate"] = str(lr)
-
-    if ignore_finished and config in configs_done:
-        skipped += 1
-        continue
     
     if quant == "qat":
         ep = int(ep * 0.1)
@@ -80,10 +86,16 @@ for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, 
         f"--client_batch_size {client_batch_size} "
         f"--learning_rate {lr:.10f} "
         f"--epochs {ep} "
-        f">> {log_file}\n\n"
+        f">> {log_file}\n"
     )
-    result += cmd
-    count += 1
+    ckey = tuple(config.items())
+    if ignore_finished and ckey in configs_done_count:
+        config_repetitions = max(0, number_of_repetitions - configs_done_count[ckey])
+    else:
+        config_repetitions = number_of_repetitions
+    result += cmd * config_repetitions + "\n"
+    count += config_repetitions
+    skipped += (number_of_repetitions - config_repetitions)
 
 #print(result)
 with open('./experiments/training_script.sh', 'w') as f:
