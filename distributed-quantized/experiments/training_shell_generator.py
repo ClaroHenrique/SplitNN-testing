@@ -48,54 +48,55 @@ if os.path.exists("experiments/training_results.csv"):
 
 number_of_repetitions = int(input("Tell the number of repetitions for each experiment: "))
 
-for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, lr, ep) in itertools.product(
-        dataset_names,
-        model_names,
-        quantization_types,
-        optimizers,
-        split_points,
-        num_clients,
-        image_sizes,
-        server_batch_sizes,
-        learning_rates,
-        epochs,
-        ):
-    
-    config = {}
-    config["model_name"] = model
-    config["quantization_type"] = quant
-    config["split_point"] = str(split)
-    config["num_clients"] = str(n_clients)
-    config["dataset_name"] = dataset
-    config["optimizer_name"] = opt
-    #config["learning_rate"] = str(lr)
-    
-    if quant == "qat":
-        ep = int(ep * 0.1)
-        lr = lr * 0.001
-    client_batch_size = server_batch_size // n_clients
-    cmd = (
-        f"python3 train_sfl_local.py "
-        f"--model_name {model} "
-        f"--quantization_type {quant} "
-        f"--optimizer {opt} "
-        f"--dataset_name {dataset} "
-        f"--split_point {split} "
-        f"--num_clients {n_clients} "
-        f"--image_size {img_size[0]} {img_size[1]} "
-        f"--client_batch_size {client_batch_size} "
-        f"--learning_rate {lr:.10f} "
-        f"--epochs {ep} "
-        f">> {log_file}\n"
-    )
-    ckey = tuple(config.items())
-    if ignore_finished and ckey in configs_done_count:
-        config_repetitions = max(0, number_of_repetitions - configs_done_count[ckey])
-    else:
-        config_repetitions = number_of_repetitions
-    result += cmd * config_repetitions + "\n"
-    count += config_repetitions
-    skipped += (number_of_repetitions - config_repetitions)
+for _ in range(number_of_repetitions):
+    for (dataset, model, quant, opt, split, n_clients, img_size, server_batch_size, lr, ep) in itertools.product(
+            dataset_names,
+            model_names,
+            quantization_types,
+            optimizers,
+            split_points,
+            num_clients,
+            image_sizes,
+            server_batch_sizes,
+            learning_rates,
+            epochs,
+            ):
+        
+        config = {}
+        config["model_name"] = model
+        config["quantization_type"] = quant
+        config["split_point"] = str(split)
+        config["num_clients"] = str(n_clients)
+        config["dataset_name"] = dataset
+        config["optimizer_name"] = opt
+        #config["learning_rate"] = str(lr)
+        
+        if quant == "qat":
+            ep = int(ep * 0.1)
+            lr = lr * 0.001
+        client_batch_size = server_batch_size // n_clients
+        cmd = (
+            f"python3 train_sfl_local.py "
+            f"--model_name {model} "
+            f"--quantization_type {quant} "
+            f"--optimizer {opt} "
+            f"--dataset_name {dataset} "
+            f"--split_point {split} "
+            f"--num_clients {n_clients} "
+            f"--image_size {img_size[0]} {img_size[1]} "
+            f"--client_batch_size {client_batch_size} "
+            f"--learning_rate {lr:.10f} "
+            f"--epochs {ep} "
+            f">> {log_file} 2>&1\n"
+        )
+        ckey = tuple(config.items())
+
+        if (not ignore_finished) or (ckey not in configs_done_count) or (configs_done_count[ckey] < number_of_repetitions):
+            result += cmd + "\n"
+            count += 1
+            configs_done_count[ckey] = configs_done_count.get(ckey, 0) + 1
+        else:
+            skipped += 1
 
 #print(result)
 with open('./experiments/training_script.sh', 'w') as f:
